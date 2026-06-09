@@ -1,6 +1,5 @@
 .env
-*.csv
-__pycache__/
-*.pyc
-*.pyo
+node_modules
+*.session
+/data
 .DS_Store
