@@ -1,176 +1,145 @@
-# Facebook Group Member Transfer Tool
+# UKSC v2 — Telegram → AI → Shopify pipeline
 
-A Python CLI tool that reads all members from one Facebook group and sends them invitations to join another group — using the official Facebook Graph API.
+UK Stylish Club product onboarder. A Node.js app on Fly.io that:
 
-> **How it works:** Facebook's API does not allow force-adding users. Instead, the tool sends each member a standard group invitation that they must accept. This is intentional (anti-spam) and keeps the tool fully compliant with Facebook's Platform Policies.
+1. **Silently** reads my personal Telegram for vendor product photos (vendors never notice anything — strictly read-only toward them)
+2. Analyses them with the **Anthropic Message Batches API** (cheap, async, every 15 min, model `claude-haiku-4-5`)
+3. Lets me **review / price / publish** to Shopify from a mobile PWA
+4. Notifies **only me**, via my own Telegram **Saved Messages**
 
----
-
-## Requirements
-
-- Python 3.8+
-- A Facebook account that is **admin of both groups**
-- A Facebook Developer App (free, setup takes ~10 minutes — see below)
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/bilalzdeveloper/hello-world.git
-cd hello-world
-pip install -r requirements.txt
-cp .env.example .env
+```
+Telegram photos ──┐
+                  ├─► resize → hash → dedupe → batch analysis → review queue ─► Shopify
+Gallery uploads ──┘                                 │
+                                         Saved Messages digests
 ```
 
-Then fill in `.env` with your credentials (see setup steps below).
+> **⚠️ Branch transplant note:** this app was built on the `claude/uksc-v2-pipeline-c2e2zq`
+> branch of `hello-world` because the build session couldn't push to `uksc-onboarder`.
+> To move it there as `v2-pipeline`, run this in any Codespace:
+>
+> ```bash
+> git clone https://github.com/BilalzDeveloper/uksc-onboarder.git && cd uksc-onboarder
+> git fetch https://github.com/BilalzDeveloper/hello-world.git claude/uksc-v2-pipeline-c2e2zq
+> git checkout -b v2-pipeline FETCH_HEAD && git push -u origin v2-pipeline
+> ```
 
 ---
 
-## Facebook Developer App Setup
+## 📱 PHONE-ONLY RUNBOOK (in order)
 
-### Step 1 — Create the App
+Everything below works from a phone browser: web dashboards + GitHub Codespaces as the only terminal.
 
-1. Go to [https://developers.facebook.com/apps/](https://developers.facebook.com/apps/) and click **Create App**.
-2. Choose **Other** for use case, then **None** for app type.
-3. Give it any name (e.g. "Group Transfer Tool"). Your app starts in Development Mode automatically — no review needed for personal use.
+### 1. Neon database (web)
 
-### Step 2 — Add Required Permissions
+1. Go to **[neon.tech](https://neon.tech)** → sign up → **Create project** (any region near you, e.g. London)
+2. On the project dashboard, open **Connection Details** → copy the **connection string**
+   (looks like `postgres://user:pass@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`)
+3. That's your `DATABASE_URL`. Tables are created automatically the first time the app boots — nothing else to do.
 
-1. In the App Dashboard, go to **App Review → Permissions and Features**.
-2. Find `groups_access_member_info` and click **Request** to add it to your app.
-3. In Development Mode, this permission works without submitting for review, as long as your account is listed as an App Admin or Tester.
+### 2. Telegram API credentials (web)
 
-### Step 3 — Get Your User Access Token
+1. Go to **[my.telegram.org](https://my.telegram.org)** → log in with your phone number
+2. **API development tools** → create an app (any name/short name)
+3. Copy **api_id** and **api_hash**
 
-1. Go to [https://developers.facebook.com/tools/explorer/](https://developers.facebook.com/tools/explorer/).
-2. Select your app from the dropdown (top right).
-3. Click **Generate Access Token**.
-4. In the permissions selector, add: `groups_access_member_info` and `publish_to_groups`.
-5. Click **Generate Access Token** again and authorize — this gives a short-lived token (~1–2 hours).
-6. Copy the token.
+### 3. Telegram login from Codespaces (phone browser)
 
-### Step 4 — Collect Your Credentials
+1. Open this repo on github.com → **Code ▾ → Codespaces → Create codespace** on branch `v2-pipeline`
+2. In the Codespace terminal:
+   ```bash
+   npm install
+   node scripts/login.js
+   ```
+3. Enter api_id, api_hash, your phone number (`+44…`), the code Telegram sends you, and your 2FA password if you have one
+4. Copy the long line between `COPY-THIS-START` and `COPY-THIS-END` — that's your `TELEGRAM_SESSION`. Keep it secret: it **is** your Telegram login.
 
-| Value | Where to find it |
+### 4. Fly.io app + volume + secrets (web dashboard)
+
+1. **[fly.io](https://fly.io)** → sign up → Dashboard → **Launch an app** → name it **`uksc`** (region: London)
+   - If the dashboard insists on a repo/deploy step, skip/cancel after the app exists — GitHub Actions does the deploying.
+2. App → **Volumes** → **Create volume**: name **`data`**, size **3 GB**, same region as the app
+3. App → **Secrets** → add each of these:
+
+   | Secret | Value |
+   |---|---|
+   | `DATABASE_URL` | from step 1 |
+   | `TELEGRAM_API_ID` | from step 2 |
+   | `TELEGRAM_API_HASH` | from step 2 |
+   | `TELEGRAM_SESSION` | from step 3 |
+   | `ANTHROPIC_KEY` | console.anthropic.com → API Keys |
+   | `SHOPIFY_TOKEN` | Shopify admin → Settings → Apps → Develop apps → your app → API credentials (`shpat_…`) |
+   | `SHOPIFY_DOMAIN` | `uk-stylish.myshopify.com` |
+   | `APP_PASSWORD` | a strong password for the PWA login |
+   | `PUBLISH_STATUS` | `ACTIVE` (or `DRAFT` to review in Shopify before going live) |
+
+### 5. Deploy token → GitHub secret
+
+1. Fly dashboard → **Tokens** (account or app level) → **Create deploy token** → copy it
+2. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
+   name **`FLY_API_TOKEN`**, value = the token
+
+### 6. Push → deploy → install
+
+1. Push anything to `v2-pipeline` (or `main`) → the **Fly Deploy** Action builds and deploys
+2. Open **https://uksc.fly.dev** → log in with `APP_PASSWORD`
+3. Browser menu → **Add to Home Screen** → you now have the UKSC app icon
+
+---
+
+## Daily flow
+
+1. Vendors send photos on Telegram (or you forward WhatsApp photos to **Saved Messages**, or upload from your gallery in the Inbox tab). A caption containing a vendor code (`#siim`, `ad`, …) assigns the vendor; otherwise the chat mapping is used; unknown chats show up under **⚠️ Unassigned** → map them once in Settings (or mark `IGNORE`).
+2. Every 15 minutes the pipeline batches new photos to the AI. When a batch finishes you get a **Saved Messages digest**.
+3. Open the app → **Review**: fix titles/types/colours, set prices (global, by type, or per product), or tap **Approve all high-conf** (auto-priced from your price rules).
+4. Hit **🚀 GO** → watch the **Queue** tab. Publishing runs on the server — you can close the app. A "publish complete" digest lands in Saved Messages.
+
+Testing tip: **Settings → ▶ Run pipeline now** triggers the 15-min cron immediately (also `POST /api/dev/run-pipeline`).
+
+---
+
+## TROUBLESHOOTING
+
+**Userbot not connecting**
+- Fly dashboard → app → **Live Logs**. Healthy boot logs `userbot connected as …`.
+- `TELEGRAM_SESSION invalid/expired` → re-run `node scripts/login.js` in a Codespace and update the Fly secret. Logging out of Telegram on your phone (or "Terminate all sessions") kills the session string.
+- No logs about the userbot at all → the `TELEGRAM_SESSION` secret is empty/missing (the app deliberately skips the userbot then).
+- Telegram sometimes flags fresh sessions from datacenter IPs; if login succeeds but the connection drops, wait a few minutes — it reconnects forever, with logs.
+
+**Neon / SSL errors**
+- `DATABASE_URL` must be the **full** Neon string including `?sslmode=require`.
+- `password authentication failed` → re-copy the string from Neon (Reset password on the Neon dashboard if needed).
+- Neon free tier suspends idle DBs; the first query after a while takes a few seconds — the app retries bootstrap automatically on boot.
+- `db bootstrap failed` repeating → check the hostname: it must be the **pooled** or direct Neon endpoint copied verbatim, no spaces.
+
+**sharp build issues**
+- In the Codespace: `npm rebuild sharp` (or delete `node_modules` and `npm install` again).
+- In Docker/Fly this is already handled — the image installs `libvips42`. If a deploy fails on sharp, check the Action log for an apt error and re-run the job.
+- Apple/ARM vs x64 mismatch errors locally → `npm install --os=linux --cpu=x64 sharp` inside the Codespace (Codespaces are x64 Linux).
+
+**Batch polling**
+- Batches usually finish well under an hour; the app polls every 30 s and the cron also re-checks every 15 min.
+- If the server restarts mid-batch, state is saved on the `/data` volume and polling resumes on boot — nothing is lost.
+- Photos stuck in `analysing` for 6+ hours are automatically re-queued on the next cycle.
+- `ANTHROPIC_KEY not set` in logs → add the Fly secret; check console.anthropic.com → Usage if requests error.
+
+**Publishing**
+- A failed product shows ❌ in the Queue tab with the Shopify error. Fix the row in Review (it's back in state `failed` → edit and approve again) and GO again.
+- `collection not found` warnings in logs → the collection title in `src/vendors.js` must match a collection that exists in Shopify admin.
+
+---
+
+## Stack / layout
+
+| Path | What |
 |---|---|
-| **App ID** | App Dashboard → Settings → Basic |
-| **App Secret** | App Dashboard → Settings → Basic (click Show) |
-| **User Access Token** | Graph API Explorer (Step 3 above) |
-| **Source Group ID** | Open Group A on Facebook → the number in the URL: `facebook.com/groups/XXXXXXXX` |
-| **Dest Group ID** | Open Group B on Facebook → same method |
+| `src/server.js` | Express: static PWA + JSON API, app-password auth (httpOnly cookie, rate-limited login) |
+| `src/userbot.js` | GramJS on my personal account. READ-ONLY toward vendors; writes only to my Saved Messages |
+| `src/pipeline.js` | resize (sharp, 800px q80) → SHA-256 dedupe → Message Batches (every 15 min) → review queue |
+| `src/shopify-queue.js` | throttled (~1.5 r/s) publisher, 3 retries, DB-persisted, survives restarts |
+| `src/vendors.js` | vendor codes + collection map (extracted from the old Drive-based `index.html`) |
+| `src/db.js` | Neon Postgres via `pg`; schema bootstrap + price seed on boot |
+| `scripts/login.js` | one-time Telegram login, prints the session string (Codespaces-safe) |
+| `public/` | the PWA: dark UKSC UI, Inbox / Review / Queue / Settings, manifest + service worker |
 
-### Step 5 — Fill in `.env`
-
-```
-FB_APP_ID=123456789
-FB_APP_SECRET=abcdef1234567890abcdef1234567890
-FB_ACCESS_TOKEN=EAAxxxxx...
-SOURCE_GROUP_ID=111222333444555
-DEST_GROUP_ID=666777888999000
-```
-
-### Step 6 — Exchange for a Long-Lived Token (recommended)
-
-Short-lived tokens expire in ~2 hours. Exchange it for a 60-day token:
-
-```bash
-python main.py --exchange-token
-```
-
-Copy the printed token back into `.env` as `FB_ACCESS_TOKEN`.
-
----
-
-## Usage
-
-### Dry Run (read members only, no invitations sent)
-
-```bash
-python main.py --source SOURCE_GROUP_ID --dest DEST_GROUP_ID --dry-run
-```
-
-Exports a CSV of all members. Inspect it before running live.
-
-### Live Transfer
-
-```bash
-python main.py --source SOURCE_GROUP_ID --dest DEST_GROUP_ID
-```
-
-Reads group IDs from command line (or you can omit them and use the values in `.env`).
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--source` | — | Source group ID (Group A) |
-| `--dest` | — | Destination group ID (Group B) |
-| `--dry-run` | off | Read members, export CSV, do NOT send invitations |
-| `--delay` | `18` | Seconds between invite calls (~200/hour rate limit) |
-| `--exchange-token` | off | Swap short-lived token for 60-day token and exit |
-
-### Example with custom delay
-
-```bash
-python main.py --source 111222333 --dest 444555666 --delay 20
-```
-
----
-
-## Output
-
-After a live run, a timestamped CSV is saved in the current directory:
-
-```
-fb_transfer_20240115_143022.csv
-```
-
-| Column | Values |
-|---|---|
-| `name` | Member's display name |
-| `user_id` | Numeric Facebook user ID |
-| `status` | `invited`, `already_member`, `privacy_blocked`, `error`, `skipped` |
-| `reason` | Error detail (empty on success) |
-
-To verify invitations were sent: open Group B on Facebook → **Admin Panel → Members → Invited**.
-
----
-
-## Rate Limiting
-
-Facebook allows ~200 API calls per hour on a standard user token.
-
-- Default delay is **18 seconds** between invite calls (~200/hour).
-- On a rate-limit error the script sleeps 60 seconds and retries once.
-- After 2 consecutive rate-limit errors it saves partial results and exits — re-run the script after an hour to continue.
-- Use `--delay 30` for a more conservative rate if you have a large group.
-
----
-
-## Policy Compliance
-
-This tool:
-- Uses only official Facebook Graph API endpoints
-- Never force-adds users — only sends invitations users must accept
-- Only requests `id` and `name` fields (no personal data harvesting)
-- Respects rate limits
-- Requires you to be admin of both groups
-
-It does **not** scrape, automate a browser, or bypass any Facebook security mechanism.
-
----
-
-## Troubleshooting
-
-**"Permission denied reading group members"**
-Your token is missing the `groups_access_member_info` permission. Re-generate the token in Graph API Explorer with that permission checked (Step 3).
-
-**"Access token is invalid or expired"**
-Run `python main.py --exchange-token` to get a fresh 60-day token, then update `.env`.
-
-**Invitations not appearing in Group B**
-Check that your account is an admin of Group B. The `POST /{group_id}/members` endpoint requires admin access.
-
-**"publish_to_groups" not available in Explorer**
-Some apps need this added under App Review → Permissions. In Development Mode it may appear as optional — add it and re-generate your token.
+Secrets live **only** in Fly secrets / local `.env` (gitignored). Nothing secret is ever served to the browser.

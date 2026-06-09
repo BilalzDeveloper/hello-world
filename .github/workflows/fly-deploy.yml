@@ -1,0 +1,19 @@
+name: Fly Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - v2-pipeline
+      - claude/uksc-v2-pipeline-c2e2zq
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: fly-deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
