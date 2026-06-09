@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#f5f500"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+<title>UKSC</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0a;color:#e5e5e5;font-family:'Courier New',monospace;min-height:100vh;padding-bottom:70px}
+  a{color:#f5f500}
+  #header{background:#111;border-bottom:1px solid #222;padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+  .logo{font-family:Impact,sans-serif;font-size:20px;letter-spacing:4px;color:#f5f500;font-weight:900}
+  #header-title{flex:1;font-size:12px;color:#999;letter-spacing:1px}
+  .btn{background:#f5f500;color:#000;border:none;border-radius:3px;padding:12px 20px;font-family:'Courier New',monospace;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:1px}
+  .btn:hover{background:#ffe500}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn-sm{background:transparent;border:1px solid #333;color:#ccc;border-radius:3px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:.5px}
+  .btn-sm:hover{border-color:#555;color:#fff}
+  .btn-sm:disabled{opacity:.3;cursor:default}
+  .btn-xs{background:transparent;border:1px solid #333;color:#888;border-radius:3px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'Courier New',monospace}
+  .btn-go{background:#f5f500;color:#000;border:none;border-radius:3px;padding:12px 28px;font-family:'Courier New',monospace;font-weight:700;font-size:14px;cursor:pointer;letter-spacing:1px}
+  .btn-go:disabled{opacity:.4}
+  .screen{display:none}.screen.active{display:block}
+  label{font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;display:block}
+  input,select{background:#0d0d0d;border:1px solid #2a2a2a;border-radius:3px;color:#e5e5e5;padding:10px 12px;font-size:13px;outline:none;width:100%;font-family:'Courier New',monospace}
+  input:focus,select:focus{border-color:#444}
+  select option{background:#0d0d0d}
+  .hint{font-size:11px;color:#555;line-height:1.6}
+  #login-card{max-width:420px;margin:80px auto;background:#111;border:1px solid #222;border-radius:4px;padding:40px 36px;display:flex;flex-direction:column;gap:12px}
+  .logo-sub{color:#888;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-top:2px;margin-bottom:12px}
+  #login-err{color:#f87171;font-size:12px;min-height:16px}
+  /* tabs */
+  #tabbar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #222;display:flex;z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+  .tab{flex:1;text-align:center;padding:13px 0 11px;font-size:11px;letter-spacing:1px;color:#666;cursor:pointer;border-top:2px solid transparent;text-transform:uppercase}
+  .tab.active{color:#f5f500;border-top-color:#f5f500}
+  /* inbox */
+  #vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1px;background:#1a1a1a}
+  .vendor-card{background:#0d0d0d;padding:18px 16px;display:flex;flex-direction:column;gap:7px;cursor:pointer}
+  .vendor-card.has-pending{background:#111}
+  .vendor-card.unassigned{border-left:2px solid #5a4a1a}
+  .vendor-name{font-size:17px;font-weight:700;letter-spacing:1px;color:#fff}
+  .vendor-count{font-size:11px;color:#666;line-height:1.7}
+  .chips{display:flex;gap:5px;flex-wrap:wrap}
+  .chip{font-size:9px;padding:2px 7px;border-radius:8px;border:1px solid #333;color:#888;letter-spacing:.5px}
+  .chip.tg{border-color:#2a4a5a;color:#6ab}
+  .chip.gal{border-color:#3a5a2a;color:#8b8}
+  #upload-bar{padding:14px 20px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #upload-bar select{width:auto;min-width:110px}
+  #refresh-bar{padding:12px 20px;background:#0d0d0d;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:12px;font-size:12px;color:#666}
+  /* review */
+  #review-bar{padding:14px 20px;background:#111;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #review-bar input,#review-bar select{width:auto}
+  #product-list{padding:16px 20px;display:flex;flex-direction:column;gap:16px;padding-bottom:140px}
+  .product-card{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+  .product-card.approved{border-color:#2a4a2a}
+  .product-header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .product-num{font-size:11px;color:#555;min-width:24px}
+  .badge{font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:.5px}
+  .badge-high{background:#1a2e1a;color:#4ade80}
+  .badge-low{background:#2e1a1a;color:#f87171}
+  .badge-state{background:#1a1a2e;color:#9ab}
+  .thumb-row{display:flex;gap:8px;flex-wrap:wrap}
+  .thumb{width:80px;height:80px;object-fit:cover;border-radius:2px;border:1px solid #222}
+  .field-row{display:flex;gap:12px;flex-wrap:wrap}
+  .field{flex:1 1 150px;display:flex;flex-direction:column;gap:4px}
+  .field-label{font-size:10px;color:#555;letter-spacing:1px;text-transform:uppercase}
+  .field-input{background:#0a0a0a;border:1px solid #222;border-radius:2px;color:#e5e5e5;padding:7px 10px;font-size:12px;font-family:'Courier New',monospace;outline:none;width:100%}
+  .field-input.missing{border-color:#5a2020;background:#1a0a0a}
+  .field-input[readonly]{background:#111}
+  .note-line{font-size:11px;color:#666;font-style:italic}
+  #go-bar{position:fixed;bottom:calc(44px + env(safe-area-inset-bottom));left:0;right:0;background:#111;border-top:1px solid #222;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;z-index:15}
+  #go-summary{font-size:12px;color:#666}
+  /* queue */
+  #queue-list{padding:24px;display:flex;flex-direction:column;gap:12px}
+  .progress-item{display:flex;align-items:center;gap:14px;font-size:13px}
+  .progress-icon{font-size:16px;width:20px;text-align:center}
+  .progress-title{color:#ccc;flex:1}
+  .progress-error{color:#f87171;font-size:11px}
+  /* settings */
+  #screen-settings{padding:20px}
+  .settings-block{background:#111;border:1px solid #1e1e1e;border-radius:4px;padding:18px;margin-bottom:18px}
+  .settings-title{font-size:11px;color:#f5f500;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px}
+  .rule-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .rule-row label{flex:1;margin:0;text-transform:none;font-size:12px;color:#aaa}
+  .rule-row input{width:90px}
+  .chat-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .chat-row .chat-name{flex:1 1 140px;font-size:12px;color:#ccc;word-break:break-all}
+  .chat-row select{width:auto;min-width:110px}
+  .empty{padding:40px 20px;text-align:center;color:#555;font-size:12px}
+  #toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#222;border:1px solid #444;color:#eee;font-size:12px;padding:10px 18px;border-radius:3px;z-index:99;display:none;max-width:90vw}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .pulsing{animation:pulse 1.4s infinite}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div id="login-card">
+    <div class="logo">UKSC</div>
+    <div class="logo-sub">Pipeline</div>
+    <label>App password</label>
+    <input type="password" id="inp-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div id="login-err"></div>
+    <button class="btn" onclick="doLogin()">Log in →</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header" style="display:none">
+  <span class="logo">UKSC</span>
+  <span id="header-title">Inbox</span>
+  <button class="btn-sm" id="btn-refresh" onclick="refreshCurrent()">↻</button>
+</div>
+
+<!-- INBOX -->
+<div id="screen-inbox" class="screen">
+  <div id="upload-bar">
+    <label style="margin:0;display:inline;text-transform:none">📷 Gallery →</label>
+    <select id="upload-vendor"></select>
+    <input type="file" id="upload-files" accept="image/*" multiple style="display:none" onchange="doUpload()"/>
+    <button class="btn-sm" onclick="document.getElementById('upload-files').click()">Choose photos…</button>
+    <span id="upload-status" class="hint"></span>
+  </div>
+  <div id="refresh-bar"><span id="inbox-status">Loading…</span></div>
+  <div id="vendor-grid"></div>
+</div>
+
+<!-- REVIEW -->
+<div id="screen-review" class="screen">
+  <div id="review-bar">
+    <select id="review-vendor" onchange="loadReview()"></select>
+    <input type="text" id="global-price" placeholder="£ all" inputmode="decimal" style="width:70px"/>
+    <button class="btn-sm" onclick="applyGlobalPrice()">Apply</button>
+    <select id="bytype-type"></select>
+    <input type="text" id="bytype-price" placeholder="£ type" inputmode="decimal" style="width:70px"/>
+    <button class="btn-sm" onclick="applyTypePrice()">Apply</button>
+    <button class="btn-sm" onclick="approveHighConfidence()">✓ Approve all high-conf</button>
+  </div>
+  <div id="product-list"></div>
+  <div id="go-bar" style="display:none">
+    <span id="go-summary"></span>
+    <button class="btn-go" id="btn-go" onclick="doPublish()">🚀 GO</button>
+  </div>
+</div>
+
+<!-- QUEUE -->
+<div id="screen-queue" class="screen">
+  <div id="queue-list"><div class="empty">No publish jobs yet.</div></div>
+</div>
+
+<!-- SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div class="settings-block">
+    <div class="settings-title">Price rules (auto-price by type)</div>
+    <div id="rules-list"></div>
+    <button class="btn-sm" onclick="saveRules()" style="margin-top:8px">Save rules</button>
+  </div>
+  <div class="settings-block">
+    <div class="settings-title">Unmapped Telegram chats</div>
+    <div id="chats-list"><div class="hint">None 🎉</div></div>
+  </div>
+  <div class="settings-block">
+    <div class="settings-title">App</div>
+    <div class="hint" style="line-height:2">
+      UKSC pipeline v2 · <span id="app-host"></span><br/>
+      Photos: Telegram (auto) + gallery upload<br/>
+      Analysis: Anthropic Message Batches (every 15 min)<br/>
+      <a href="#" onclick="runPipelineNow();return false">▶ Run pipeline now</a> ·
+      <a href="#" onclick="doLogout();return false">Log out</a>
+    </div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div id="tabbar" style="display:none">
+  <div class="tab active" data-tab="inbox" onclick="showTab('inbox')">Inbox</div>
+  <div class="tab" data-tab="review" onclick="showTab('review')">Review</div>
+  <div class="tab" data-tab="queue" onclick="showTab('queue')">Queue</div>
+  <div class="tab" data-tab="settings" onclick="showTab('settings')">Settings</div>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let CFG = { vendors: [], productTypes: [], collectionMap: {}, footwearTypes: [] };
+let reviewRows = [];
+let currentTab = 'inbox';
+let queueTimer = null;
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  if (opts.json) {
+    opts.body = JSON.stringify(opts.json);
+    opts.headers = { ...(opts.headers || {}), 'Content-Type': 'application/json' };
+    delete opts.json;
+  }
+  const r = await fetch(path, opts);
+  if (r.status === 401) { showLogin(); throw new Error('Not logged in'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+  return d;
+}
+
+function toast(msg, ms = 2600) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms);
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function showLogin() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('header').style.display = 'none';
+  document.getElementById('tabbar').style.display = 'none';
+}
+
+async function doLogin() {
+  const pw = document.getElementById('inp-password').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  try {
+    await api('/api/login', { method: 'POST', json: { password: pw } });
+    document.getElementById('inp-password').value = '';
+    await enterApp();
+  } catch (e) { err.textContent = e.message; }
+}
+
+async function doLogout() {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  showLogin();
+}
+
+async function enterApp() {
+  CFG = await api('/api/config');
+  fillVendorSelects();
+  document.getElementById('header').style.display = 'flex';
+  document.getElementById('tabbar').style.display = 'flex';
+  document.getElementById('app-host').textContent = location.host;
+  showTab('inbox');
+}
+
+function fillVendorSelects() {
+  const opts = CFG.vendors.map(v => `<option>${v}</option>`).join('');
+  document.getElementById('upload-vendor').innerHTML = opts;
+  document.getElementById('review-vendor').innerHTML = '<option value="">All vendors</option>' + opts;
+  document.getElementById('bytype-type').innerHTML = CFG.productTypes.map(t => `<option>${t}</option>`).join('');
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.getElementById('header-title').textContent =
+    { inbox: 'Inbox', review: 'Review', queue: 'Publish queue', settings: 'Settings' }[name];
+  clearInterval(queueTimer); queueTimer = null;
+  if (name === 'inbox') loadInbox();
+  if (name === 'review') loadReview();
+  if (name === 'queue') { loadQueue(); queueTimer = setInterval(loadQueue, 3000); }
+  if (name === 'settings') loadSettings();
+}
+
+function refreshCurrent() { showTab(currentTab); }
+
+// ── INBOX ─────────────────────────────────────────────────────────────────────
+async function loadInbox() {
+  const grid = document.getElementById('vendor-grid');
+  const status = document.getElementById('inbox-status');
+  status.textContent = 'Loading…';
+  const d = await api('/api/inbox');
+
+  const per = {}; // vendor -> aggregates
+  const ensure = v => per[v] || (per[v] = { images: 0, byStatus: {}, tg: 0, gal: 0, review: 0, ready: 0 });
+  for (const r of d.images) {
+    const p = ensure(r.vendor || 'UNASSIGNED');
+    p.images += r.n;
+    p.byStatus[r.status] = (p.byStatus[r.status] || 0) + r.n;
+    if (r.source === 'telegram') p.tg += r.n; else p.gal += r.n;
+  }
+  for (const r of d.review) {
+    const p = ensure(r.vendor || 'UNASSIGNED');
+    if (r.state === 'needs_review') p.review += r.n;
+    if (r.state === 'auto_ready' || r.state === 'approved') p.ready += r.n;
+  }
+
+  grid.innerHTML = '';
+  let total = 0;
+
+  if (d.unmappedChats > 0 || per.UNASSIGNED) {
+    const p = per.UNASSIGNED || { images: 0, tg: 0, gal: 0 };
+    const card = document.createElement('div');
+    card.className = 'vendor-card unassigned';
+    card.onclick = () => showTab('settings');
+    card.innerHTML = `<div class="vendor-name">⚠️ Unassigned</div>
+      <div class="vendor-count">${p.images} photo(s) · ${d.unmappedChats} unmapped chat(s)</div>
+      <div class="hint">tap to map chats →</div>`;
+    grid.appendChild(card);
+  }
+
+  for (const v of CFG.vendors) {
+    const p = per[v];
+    total += p ? p.images : 0;
+    const card = document.createElement('div');
+    card.className = 'vendor-card' + (p ? ' has-pending' : '');
+    card.onclick = () => { document.getElementById('review-vendor').value = v; showTab('review'); };
+    const states = p
+      ? Object.entries(p.byStatus).map(([s, n]) => `${n} ${s.replace('_', ' ')}`).join(' · ')
+      : 'no photos today';
+    card.innerHTML = `<div class="vendor-name">${v}</div>
+      <div class="vendor-count">${states}${p && (p.review || p.ready) ? `<br/>📝 ${p.review} to review · ✅ ${p.ready} ready` : ''}</div>
+      <div class="chips">${p && p.tg ? `<span class="chip tg">TG ${p.tg}</span>` : ''}${p && p.gal ? `<span class="chip gal">GAL ${p.gal}</span>` : ''}</div>`;
+    grid.appendChild(card);
+  }
+  status.textContent = `${total} photo(s) today across ${CFG.vendors.length} vendors`;
+}
+
+async function doUpload() {
+  const inp = document.getElementById('upload-files');
+  const vendor = document.getElementById('upload-vendor').value;
+  const status = document.getElementById('upload-status');
+  if (!inp.files.length) return;
+  status.textContent = `Uploading ${inp.files.length}…`;
+  const fd = new FormData();
+  fd.append('vendor', vendor);
+  for (const f of inp.files) fd.append('photos', f);
+  try {
+    const d = await api('/api/upload', { method: 'POST', body: fd });
+    const dupes = d.ingested.filter(i => i.duplicate).length;
+    status.textContent = `✓ ${d.ingested.length} in${dupes ? ` (${dupes} duplicate)` : ''}`;
+    loadInbox();
+  } catch (e) { status.textContent = '⚠️ ' + e.message; }
+  inp.value = '';
+}
+
+// ── REVIEW ────────────────────────────────────────────────────────────────────
+async function loadReview() {
+  const vendor = document.getElementById('review-vendor').value;
+  const list = document.getElementById('product-list');
+  list.innerHTML = '<div class="empty pulsing">Loading…</div>';
+  reviewRows = await api('/api/review' + (vendor ? '?vendor=' + encodeURIComponent(vendor) : ''));
+  renderReview();
+}
+
+function renderReview() {
+  const list = document.getElementById('product-list');
+  list.innerHTML = '';
+  if (!reviewRows.length) {
+    list.innerHTML = '<div class="empty">Nothing to review.</div>';
+    document.getElementById('go-bar').style.display = 'none';
+    return;
+  }
+  reviewRows.forEach((row, idx) => {
+    const card = document.createElement('div');
+    card.className = 'product-card' + (row.state === 'approved' ? ' approved' : '');
+    const typeOpts = [...CFG.productTypes, 'Unknown']
+      .map(t => `<option value="${t}"${t === row.product_type ? ' selected' : ''}>${t}</option>`).join('');
+    const stateBadge = row.state === 'auto_ready' ? '⚡ auto-ready'
+      : row.state === 'approved' ? '✅ approved'
+      : row.state === 'failed' ? '❌ failed' : '📝 needs review';
+    card.innerHTML = `
+      <div class="product-header">
+        <span class="product-num">#${row.id}</span>
+        <span class="badge ${row.confidence === 'low' ? 'badge-low' : 'badge-high'}">${row.confidence === 'low' ? '⚠️ Low confidence' : '✓ Good'}</span>
+        <span class="badge badge-state">${stateBadge}</span>
+        <span style="flex:1"></span>
+        <button class="btn-xs" onclick="skipRow(${idx})">✕ Skip</button>
+        ${row.state !== 'approved' ? `<button class="btn-xs" onclick="approveRow(${idx})">✓ Approve</button>` : ''}
+      </div>
+      <div class="thumb-row">${(row.imageUrls || []).map(u => `<img class="thumb" loading="lazy" src="${u}"/>`).join('')}</div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Title</label><input class="field-input" value="${esc(row.title)}" onchange="editRow(${idx},'title',this.value)"/></div>
+        <div class="field"><label class="field-label">Type</label><select class="field-input" onchange="editRow(${idx},'product_type',this.value)">${typeOpts}</select></div>
+        <div class="field"><label class="field-label">Collection</label><input class="field-input" readonly value="${esc(row.collection)}" id="col-${idx}"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">Colours</label><input class="field-input" value="${esc(row.colours)}" onchange="editRow(${idx},'colours',this.value)"/></div>
+        <div class="field"><label class="field-label">Sizes</label><input class="field-input" value="${esc(row.sizes)}" onchange="editRow(${idx},'sizes',this.value)"/></div>
+        <div class="field"><label class="field-label">Price (£)</label><input class="field-input${row.price ? '' : ' missing'}" inputmode="decimal" value="${row.price ?? ''}" placeholder="Required" id="price-${idx}" onchange="editRow(${idx},'price',this.value)"/></div>
+      </div>
+      ${row.notes ? `<div class="note-line">📝 ${esc(row.notes)}</div>` : ''}`;
+    list.appendChild(card);
+  });
+  updateGoBar();
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+async function editRow(idx, field, value) {
+  const row = reviewRows[idx];
+  try {
+    const updated = await api('/api/review/' + row.id, { method: 'PATCH', json: { [field]: value } });
+    reviewRows[idx] = { ...row, ...updated, imageUrls: row.imageUrls };
+    if (field === 'product_type') document.getElementById('col-' + idx).value = reviewRows[idx].collection;
+    if (field === 'price') {
+      const el = document.getElementById('price-' + idx);
+      el.classList.toggle('missing', !reviewRows[idx].price);
+    }
+    updateGoBar();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function approveRow(idx) {
+  const row = reviewRows[idx];
+  try {
+    await api('/api/review/' + row.id, { method: 'PATCH', json: { action: 'approve' } });
+    row.state = 'approved';
+    renderReview();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function skipRow(idx) {
+  const row = reviewRows[idx];
+  try {
+    await api('/api/review/' + row.id, { method: 'PATCH', json: { action: 'skip' } });
+    reviewRows.splice(idx, 1);
+    renderReview();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function applyGlobalPrice() {
+  const p = document.getElementById('global-price').value.trim();
+  if (!p || isNaN(Number(p))) return toast('Enter a number');
+  for (let i = 0; i < reviewRows.length; i++) {
+    if (reviewRows[i].state === 'approved') continue;
+    await editRow(i, 'price', p);
+  }
+  renderReview();
+}
+
+async function applyTypePrice() {
+  const type = document.getElementById('bytype-type').value;
+  const p = document.getElementById('bytype-price').value.trim();
+  if (!p || isNaN(Number(p))) return toast('Enter a number');
+  for (let i = 0; i < reviewRows.length; i++) {
+    if (reviewRows[i].product_type === type && reviewRows[i].state !== 'approved') {
+      await editRow(i, 'price', p);
+    }
+  }
+  renderReview();
+}
+
+async function approveHighConfidence() {
+  const vendor = document.getElementById('review-vendor').value;
+  try {
+    const d = await api('/api/review/approve-bulk', {
+      method: 'POST',
+      json: vendor ? { vendor, onlyHighConfidence: true } : { onlyHighConfidence: true },
+    });
+    toast(`✓ Approved ${d.approved} product(s)`);
+    loadReview();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+function updateGoBar() {
+  const approved = reviewRows.filter(r => r.state === 'approved');
+  const bar = document.getElementById('go-bar');
+  bar.style.display = approved.length ? 'flex' : 'none';
+  document.getElementById('go-summary').textContent = `${approved.length} approved`;
+}
+
+async function doPublish() {
+  const ids = reviewRows.filter(r => r.state === 'approved').map(r => r.id);
+  if (!ids.length) return;
+  const btn = document.getElementById('btn-go');
+  btn.disabled = true;
+  try {
+    await api('/api/publish', { method: 'POST', json: { ids } });
+    toast(`🚀 Publishing ${ids.length} — watch the Queue tab`);
+    showTab('queue');
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false;
+}
+
+// ── QUEUE ─────────────────────────────────────────────────────────────────────
+async function loadQueue() {
+  const list = document.getElementById('queue-list');
+  try {
+    const d = await api('/api/queue');
+    if (!d.items || !d.items.length) {
+      list.innerHTML = '<div class="empty">No publish jobs yet.</div>';
+      return;
+    }
+    list.innerHTML = d.items.map(it => {
+      const icon = it.status === 'published' ? '<span style="color:#4ade80">✓</span>'
+        : it.status === 'failed' ? '<span style="color:#f87171">✕</span>'
+        : it.status === 'publishing' ? '<span class="pulsing" style="color:#facc15">⏳</span>'
+        : '<span style="color:#555">○</span>';
+      return `<div class="progress-item">
+        <span class="progress-icon">${icon}</span>
+        <span class="progress-title">${esc(it.title)}</span>
+        ${it.error ? `<span class="progress-error">${esc(it.error)}</span>` : ''}
+        ${it.shopify_product_id ? `<span class="hint">${esc(String(it.shopify_product_id).replace('gid://shopify/Product/', '#'))}</span>` : ''}
+      </div>`;
+    }).join('') + `<div class="hint" style="margin-top:12px">${d.running ? '⏳ queue running…' : 'queue idle'}</div>`;
+  } catch (e) { /* keep last view on transient errors */ }
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  const [rules, chats] = await Promise.all([api('/api/price-rules'), api('/api/chats/unmapped')]);
+  document.getElementById('rules-list').innerHTML = CFG.productTypes.map(t => {
+    const r = rules.find(x => x.product_type === t);
+    return `<div class="rule-row"><label>${t}</label>
+      <input inputmode="decimal" data-rule-type="${t}" value="${r ? Number(r.price) : ''}" placeholder="—"/></div>`;
+  }).join('');
+
+  const cl = document.getElementById('chats-list');
+  if (!chats.length) { cl.innerHTML = '<div class="hint">None 🎉</div>'; return; }
+  const vendorOpts = ['<option value="">— pick vendor —</option>']
+    .concat(CFG.vendors.map(v => `<option>${v}</option>`), '<option value="IGNORED">🚫 IGNORE</option>').join('');
+  cl.innerHTML = chats.map(c => `
+    <div class="chat-row">
+      <span class="chat-name">${esc(c.chat_title || '(no title)')} <span class="hint">· ${c.image_count} photo(s)</span></span>
+      <select data-chat-id="${c.tg_chat_id}">${vendorOpts}</select>
+      <button class="btn-sm" onclick="mapChat(this)">Map</button>
+    </div>`).join('');
+}
+
+async function mapChat(btn) {
+  const sel = btn.previousElementSibling;
+  const vendor = sel.value;
+  if (!vendor) return toast('Pick a vendor first');
+  try {
+    await api('/api/chats/map', { method: 'POST', json: { chatId: sel.dataset.chatId, vendor } });
+    toast('✓ Mapped');
+    loadSettings();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function saveRules() {
+  const rules = [...document.querySelectorAll('[data-rule-type]')].map(i => ({
+    product_type: i.dataset.ruleType,
+    price: i.value.trim() === '' ? null : Number(i.value),
+  }));
+  try {
+    await api('/api/price-rules', { method: 'PUT', json: { rules } });
+    toast('✓ Price rules saved');
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+async function runPipelineNow() {
+  toast('▶ Running pipeline…');
+  try {
+    const d = await api('/api/dev/run-pipeline', { method: 'POST' });
+    toast('✓ Pipeline: ' + JSON.stringify(d).slice(0, 120), 5000);
+  } catch (e) { toast('⚠️ ' + e.message, 5000); }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+(async () => {
+  try { await enterApp(); }       // existing session cookie?
+  catch { showLogin(); }
+})();
+</script>
+</body>
+</html>

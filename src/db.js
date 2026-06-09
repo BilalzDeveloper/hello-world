@@ -12,8 +12,11 @@ if (!process.env.DATABASE_URL) {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   // Neon requires TLS; its endpoints use certs that node's default CA bundle
-  // doesn't always chain, so don't reject on that.
-  ssl: { rejectUnauthorized: false },
+  // doesn't always chain, so don't reject on that. sslmode=disable (local dev)
+  // turns TLS off entirely.
+  ssl: process.env.DATABASE_URL.includes('sslmode=disable')
+    ? false
+    : { rejectUnauthorized: false },
   max: 5,
 });
 
