@@ -12,7 +12,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 const db = require('./db');
 const vendors = require('./vendors');
 
-const DATA_DIR = process.env.DATA_DIR || '/data';
+// Fly volume when present; falls back to ./data for laptop/local runs.
+const DATA_DIR = process.env.DATA_DIR
+  || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
 const IMG_DIR = path.join(DATA_DIR, 'images');
 const BATCH_STATE_FILE = path.join(DATA_DIR, 'batch-state.json');
 const MODEL = 'claude-haiku-4-5';
