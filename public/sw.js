@@ -1,6 +1,6 @@
 // Minimal service worker: enough for PWA installability. Network-first so the
 // app is always fresh; falls back to cache only when offline.
-const CACHE = 'uksc-v1';
+const CACHE = 'uksc-v2';
 const SHELL = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
