@@ -15,6 +15,12 @@ const pipeline = require('./pipeline');
 let client = null;
 let myId = null;
 
+// Opt-in trace: set USERBOT_DEBUG=1 to log every message the userbot sees and
+// why it was kept or skipped. Off by default so production logs stay quiet.
+const dbg = process.env.USERBOT_DEBUG
+  ? (m) => console.log('userbot[dbg]:', m)
+  : () => {};
+
 function env(name) {
   const v = process.env[name];
   if (!v) throw new Error(`${name} not set`);
@@ -51,15 +57,16 @@ async function onNewMessage(event) {
     if (!msg) return;
 
     const isSaved = msg.peerId?.userId && String(msg.peerId.userId) === String(myId);
+    dbg(`message in chat ${msg.chatId} — saved:${!!isSaved} out:${!!msg.out} private:${!!msg.isPrivate} group:${!!msg.isGroup} hasImage:${hasImage(msg)} caption:${JSON.stringify((msg.message || '').slice(0, 40))}`);
     // Listen to: incoming private/group messages, plus my own Saved Messages
     // (where I forward WhatsApp photos). Ignore broadcasts and my own
     // outgoing messages in other chats.
     if (!isSaved) {
-      if (msg.out) return;
-      if (!(msg.isPrivate || msg.isGroup)) return;
+      if (msg.out) return dbg('  skip: my own outgoing message');
+      if (!(msg.isPrivate || msg.isGroup)) return dbg('  skip: not a private/group chat');
     }
 
-    if (!hasImage(msg)) return;
+    if (!hasImage(msg)) return dbg('  skip: no photo/image document');
 
     const chatId = String(msg.chatId);
     const caption = msg.message || '';
