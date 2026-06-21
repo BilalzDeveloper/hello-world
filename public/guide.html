@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UKSC Pipeline — User Guide</title>
+<style>
+  :root {
+    --bg: #0a0a0a; --surface: #111; --surface-2: #161616;
+    --border: #222; --border-2: #1e1e1e;
+    --text: #e5e5e5; --text-bright: #fff; --text-mid: #ccc;
+    --text-dim: #999; --text-faint: #666;
+    --accent: #f5f500; --accent-text: #f5f500;
+    --good: #4ade80; --bad: #f87171;
+    --tag-bg: #1a1a2e; --tag-fg: #9ab;
+    --code-bg: #0d1117; --code-border: #1e1e1e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Courier New', monospace; font-size: 14px;
+    line-height: 1.7; padding: 0 0 60px;
+  }
+
+  /* ── header ── */
+  .site-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 18px 32px; display: flex; align-items: baseline; gap: 16px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { font-family: Impact, sans-serif; font-size: 22px; letter-spacing: 4px; color: var(--accent-text); }
+  .logo-sub { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* ── nav ── */
+  nav {
+    background: var(--surface-2); border-bottom: 1px solid var(--border-2);
+    padding: 0 32px; display: flex; gap: 0; overflow-x: auto;
+  }
+  nav a {
+    color: var(--text-dim); text-decoration: none; font-size: 11px;
+    letter-spacing: 1px; text-transform: uppercase; padding: 12px 16px;
+    border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  nav a:hover { color: var(--text); }
+
+  /* ── layout ── */
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 32px; }
+
+  /* ── sections ── */
+  section { margin-bottom: 56px; }
+  h2 {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent-text); border-bottom: 1px solid var(--border);
+    padding-bottom: 8px; margin-bottom: 24px;
+  }
+  h3 { font-size: 14px; color: var(--text-bright); margin: 24px 0 10px; letter-spacing: .5px; }
+  p { margin-bottom: 12px; color: var(--text-mid); }
+
+  /* ── step list ── */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+  .step {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: 4px; padding: 16px 18px;
+  }
+  .step-num {
+    background: var(--accent); color: #000; font-weight: 700;
+    font-size: 12px; border-radius: 2px; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .step-title { color: var(--text-bright); font-weight: 700; margin-bottom: 4px; }
+  .step-desc { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+  /* ── info cards ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: 4px; padding: 16px 18px;
+  }
+  .card-title { color: var(--text-bright); font-weight: 700; margin-bottom: 6px; font-size: 13px; }
+  .card-body { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+
+  /* ── tab preview ── */
+  .tab-preview {
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: 4px; overflow: hidden; margin-bottom: 16px;
+  }
+  .tab-preview-header {
+    background: var(--surface-2); border-bottom: 1px solid var(--border);
+    padding: 10px 18px; font-size: 11px; color: var(--accent-text);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .tab-preview-body { padding: 16px 18px; font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+
+  /* ── code ── */
+  code {
+    background: var(--code-bg); border: 1px solid var(--code-border);
+    border-radius: 2px; padding: 1px 6px; font-size: 12px;
+    color: var(--accent-text); font-family: 'Courier New', monospace;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--code-border);
+    border-radius: 4px; padding: 16px 18px; overflow-x: auto;
+    font-size: 12px; color: #ccc; line-height: 1.6; margin-bottom: 12px;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+
+  /* ── table ── */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  th {
+    text-align: left; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-faint); border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border-2); font-size: 12px; color: var(--text-mid); }
+  td:first-child { color: var(--accent-text); font-weight: 700; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── badge ── */
+  .badge {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    border-radius: 2px; letter-spacing: .5px; vertical-align: middle;
+  }
+  .badge-good { background: #1a2e1a; color: var(--good); }
+  .badge-bad  { background: #2e1a1a; color: var(--bad); }
+  .badge-state { background: #1a1a2e; color: #9ab; }
+  .badge-accent { background: #2a2a00; color: var(--accent-text); }
+
+  /* ── callout ── */
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--surface);
+    padding: 12px 16px; border-radius: 0 4px 4px 0;
+    font-size: 12px; color: var(--text-mid); margin-bottom: 16px;
+  }
+  .callout.warn { border-left-color: var(--bad); }
+  .callout strong { color: var(--text-bright); }
+
+  /* ── vendor list ── */
+  .vendor-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .vchip {
+    background: var(--tag-bg); color: var(--tag-fg);
+    border: 1px solid #2a2a3e; border-radius: 3px;
+    font-size: 11px; padding: 3px 10px; letter-spacing: .5px;
+  }
+
+  /* ── flow diagram ── */
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 6px; margin-bottom: 16px; font-size: 12px;
+  }
+  .flow-node {
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: 3px; padding: 6px 12px; color: var(--text-mid);
+  }
+  .flow-arrow { color: var(--text-faint); font-size: 14px; }
+
+  @media (max-width: 600px) {
+    .container { padding: 24px 16px; }
+    .site-header { padding: 14px 16px; }
+    nav { padding: 0 8px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-header">
+  <span class="logo">UKSC</span>
+  <span class="logo-sub">Pipeline · User Guide</span>
+</div>
+
+<nav>
+  <a href="#overview">Overview</a>
+  <a href="#workflow">Daily workflow</a>
+  <a href="#telegram">Telegram</a>
+  <a href="#inbox">Inbox</a>
+  <a href="#review">Review</a>
+  <a href="#queue">Queue</a>
+  <a href="#settings">Settings</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+
+<div class="container">
+
+<!-- ── OVERVIEW ── -->
+<section id="overview">
+  <h2>Overview</h2>
+  <p>The UKSC pipeline watches your personal Telegram for vendor product photos, analyses them with AI, and lets you review, price, and publish products directly to your Shopify store — all from a mobile-friendly web app.</p>
+
+  <div class="flow">
+    <div class="flow-node">📱 Telegram photo</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node">Inbox <span style="color:var(--text-faint)">pending_analysis</span></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node">AI analysis <span style="color:var(--text-faint)">every 15 min</span></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node">Review tab</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-node">🚀 Shopify</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-title">Inbox</div>
+      <div class="card-body">Today's photos by vendor. Shows raw counts, source (Telegram / gallery), and pipeline status. Refreshes on demand.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Review</div>
+      <div class="card-body">AI-generated product cards. Edit title, type, colours, sizes, price. Approve and hit GO to publish to Shopify.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Queue</div>
+      <div class="card-body">Live view of the Shopify publish job. Auto-polls every 3 seconds. Shows ✓ / ✕ / ⏳ per product.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Settings</div>
+      <div class="card-body">Set auto-prices per product type. Map Telegram chats to vendors. Trigger the AI pipeline manually.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DAILY WORKFLOW ── -->
+<section id="workflow">
+  <h2>Daily workflow</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Vendor sends photos on Telegram</div>
+        <div class="step-desc">
+          Photos land in your personal Telegram — either in a private chat with the vendor, or forwarded to your <strong>Saved Messages</strong>.
+          The app picks them up within seconds. No action needed on your side.
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Open the Inbox and tap ↻</div>
+        <div class="step-desc">
+          Photos appear immediately as <code>pending_analysis</code>. You'll see vendor cards with TG chips showing how many arrived.
+          If a card shows <strong>⚠️ Unassigned</strong>, go to Settings → Chat Mapping to link that chat to a vendor.
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Wait for AI analysis (or run it now)</div>
+        <div class="step-desc">
+          The AI batch runs automatically every 15 minutes. To process immediately:
+          go to <strong>Settings → Run pipeline now</strong>.
+          Analysis identifies product type, brand, colours and assigns a confidence level.
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">Review and price products</div>
+        <div class="step-desc">
+          Switch to the <strong>Review</strong> tab. Each product card shows thumbnails and AI-filled fields.
+          Set a price (required to publish). Correct any wrong fields. Click <strong>✓ Approve</strong> on each card you want to publish.
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">Hit GO to publish</div>
+        <div class="step-desc">
+          The yellow <strong>🚀 GO</strong> bar appears at the bottom once you have approved items.
+          Tap it, then switch to the <strong>Queue</strong> tab to watch products publish to Shopify in real time.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TELEGRAM ── -->
+<section id="telegram">
+  <h2>Telegram ingestion</h2>
+
+  <h3>How the app sees Telegram messages</h3>
+  <p>The app connects to your personal Telegram account (read-only for all vendor chats). It never sends, replies, or reacts in vendor chats. The only outbound message it ever sends is a batch-complete digest to your own <strong>Saved Messages</strong>.</p>
+
+  <div class="callout">
+    <strong>Photos only arrive after the server starts.</strong> The userbot does not back-scan old messages. Only new photos that arrive while the server is running are ingested.
+  </div>
+
+  <h3>Vendor assignment — how it works</h3>
+  <p>Each photo is assigned a vendor by this priority order:</p>
+  <div class="steps" style="gap:10px">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Caption code</div>
+        <div class="step-desc">If the photo has a caption containing a vendor code (e.g. <code>#siim</code> or <code>#Siim</code>), that vendor wins. Case-insensitive. Must be attached to the photo itself — a separate text message is ignored.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Chat mapping</div>
+        <div class="step-desc">If the chat is mapped to a vendor in Settings → Chat Mapping, all photos from that chat get that vendor automatically — even with no caption.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">UNASSIGNED</div>
+        <div class="step-desc">If neither applies, the photo is stored as <strong>UNASSIGNED</strong>. Map the chat in Settings and all existing unassigned photos from it are retroactively claimed.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Vendor codes</h3>
+  <p>These are the recognised vendor codes. Use them as captions (e.g. <code>#Siim</code>). Partial matches inside words are ignored.</p>
+  <div class="vendor-chips">
+    <span class="vchip">Siim</span><span class="vchip">Sim</span><span class="vchip">Son</span>
+    <span class="vchip">Ad</span><span class="vchip">Ahm</span><span class="vchip">D</span>
+    <span class="vchip">Fr</span><span class="vchip">Alll</span><span class="vchip">Al</span>
+    <span class="vchip">Cho</span><span class="vchip">Shii</span><span class="vchip">Che</span>
+    <span class="vchip">Mon</span><span class="vchip">Afi</span><span class="vchip">Sh</span>
+    <span class="vchip">Zero</span><span class="vchip">Dar</span><span class="vchip">Nwdr</span>
+    <span class="vchip">Zz</span><span class="vchip">Mz</span><span class="vchip">Za</span>
+    <span class="vchip">Rag</span><span class="vchip">Tag</span><span class="vchip">Uptk</span>
+    <span class="vchip">Daup</span><span class="vchip">Ham</span><span class="vchip">Oooo</span>
+  </div>
+
+  <h3>Gallery upload</h3>
+  <p>You can also upload photos manually from the <strong>Inbox</strong> tab. Select a vendor from the dropdown, then tap <strong>Choose photos…</strong>. Up to 12 photos at a time. Duplicates (same image already stored) are automatically skipped.</p>
+
+  <h3>Saved Messages</h3>
+  <p>You can forward WhatsApp vendor photos to your own Telegram Saved Messages and the app will ingest them. Make sure to attach a caption with the vendor code (e.g. <code>#Siim</code>) on each forwarded photo, or map the Saved Messages chat in Settings.</p>
+</section>
+
+<!-- ── INBOX ── -->
+<section id="inbox">
+  <h2>Inbox tab</h2>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">Inbox</div>
+    <div class="tab-preview-body">
+      Shows a grid of vendor cards for <strong>today's photos</strong> only. Each card shows:<br/><br/>
+      • Photo count and pipeline status (<code>pending_analysis</code> · <code>analysed</code> · <code>skipped</code>)<br/>
+      • <span class="badge badge-state">TG 6</span> chip = 6 photos from Telegram &nbsp; <span class="badge badge-good">GAL 2</span> = 2 from gallery upload<br/>
+      • How many products are in Review and how many are ready to publish<br/><br/>
+      Tap a vendor card to jump straight to that vendor's Review queue.<br/>
+      Tap <strong>⚠️ Unassigned</strong> to go to Settings → Chat Mapping.<br/>
+      Tap <strong>↻</strong> in the top-right to refresh.
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Inbox resets each day.</strong> It only counts photos received today. Yesterday's photos are still in the Review tab.
+  </div>
+
+  <h3>Status meanings</h3>
+  <table>
+    <tr><th>Status</th><th>Meaning</th></tr>
+    <tr><td>pending_analysis</td><td>Photo received, waiting for the AI batch to run</td></tr>
+    <tr><td>analysing</td><td>Included in the current AI batch — processing now</td></tr>
+    <tr><td>analysed</td><td>AI done — product card created in Review</td></tr>
+    <tr><td>skipped</td><td>You tapped ✕ Skip on the Review card</td></tr>
+  </table>
+</section>
+
+<!-- ── REVIEW ── -->
+<section id="review">
+  <h2>Review tab</h2>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">Review</div>
+    <div class="tab-preview-body">
+      Shows AI-generated product cards ready for your review. The bar at the top has bulk actions;<br/>
+      each card has the product photos, editable fields, and per-card actions.
+    </div>
+  </div>
+
+  <h3>Product card fields</h3>
+  <table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Title</td><td>Auto-generated from vendor + brand + type + style name. Edit freely.</td></tr>
+    <tr><td>Type</td><td>Product category. Changing it updates Collection automatically.</td></tr>
+    <tr><td>Collection</td><td>Shopify collection. Set automatically from Type — read-only.</td></tr>
+    <tr><td>Colours</td><td>Comma-separated colours detected by AI. Edit as needed.</td></tr>
+    <tr><td>Sizes</td><td>Pre-filled based on type (clothing or footwear sizes). Edit if needed.</td></tr>
+    <tr><td>Price (£)</td><td>Required to approve. Highlighted red if missing. See auto-price rules in Settings.</td></tr>
+  </table>
+
+  <h3>Confidence badges</h3>
+  <p>
+    <span class="badge badge-good">✓ Good</span> — AI is confident about product type and details. Auto-price rules apply.<br/>
+    <span class="badge badge-bad">⚠️ Low confidence</span> — Blurry photo, multiple products, or unknown type. Review carefully before approving. No auto-price applied.
+  </p>
+
+  <h3>State badges</h3>
+  <p>
+    <span class="badge badge-state">📝 needs review</span> No price set yet, or low confidence.<br/>
+    <span class="badge badge-accent">⚡ auto-ready</span> High confidence + auto-price rule matched. Can approve immediately.<br/>
+    <span class="badge badge-good">✅ approved</span> Ready to publish.<br/>
+    <span class="badge badge-bad">❌ failed</span> Analysis failed — will be re-queued next cycle.
+  </p>
+
+  <h3>Bulk actions (top bar)</h3>
+  <table>
+    <tr><th>Control</th><th>What it does</th></tr>
+    <tr><td>Vendor filter</td><td>Show cards for one vendor only, or All vendors.</td></tr>
+    <tr><td>£ all → Apply</td><td>Set the same price on every unapproved card currently visible.</td></tr>
+    <tr><td>Type + £ type → Apply</td><td>Set a price only on cards of the selected product type.</td></tr>
+    <tr><td>✓ Approve all high-conf</td><td>One tap to approve everything with <span class="badge badge-good">✓ Good</span> confidence that already has a price.</td></tr>
+  </table>
+
+  <h3>Per-card actions</h3>
+  <p><strong>✕ Skip</strong> — Discards the product and marks its photos as <code>skipped</code>. Cannot be undone from the UI.</p>
+  <p><strong>✓ Approve</strong> — Marks the card as approved. A price is required. Once all editing is done, use the GO bar.</p>
+
+  <h3>Publishing</h3>
+  <p>When at least one card is approved, a yellow <strong>🚀 GO</strong> bar appears at the bottom showing how many are approved. Tap it to send them all to Shopify. The app switches to the Queue tab automatically.</p>
+
+  <div class="callout">
+    <strong>Photos arriving within 10 minutes of each other from the same chat are grouped</strong> into a single product card (up to 4 images per card). This means a vendor who sends multiple angles of the same item produces one card, not several.
+  </div>
+</section>
+
+<!-- ── QUEUE ── -->
+<section id="queue">
+  <h2>Queue tab</h2>
+  <p>Shows every product in the current publish job. Polls automatically every 3 seconds while the tab is open.</p>
+  <table>
+    <tr><th>Icon</th><th>Meaning</th></tr>
+    <tr><td>⏳ (pulsing)</td><td>Currently uploading to Shopify</td></tr>
+    <tr><td>✓ (green)</td><td>Published successfully. Shopify product ID shown.</td></tr>
+    <tr><td>✕ (red)</td><td>Failed. Error reason shown inline. Will not retry automatically.</td></tr>
+    <tr><td>○ (grey)</td><td>Queued, not yet started</td></tr>
+  </table>
+  <p>After publishing, the products appear in your Shopify admin as <strong>Active</strong> (or Draft, depending on your <code>PUBLISH_STATUS</code> setting).</p>
+</section>
+
+<!-- ── SETTINGS ── -->
+<section id="settings">
+  <h2>Settings tab</h2>
+
+  <h3>Price rules</h3>
+  <p>Set a default price per product type. When the AI classifies a product with <span class="badge badge-good">✓ Good</span> confidence and a matching rule exists, the price is filled in automatically and the card becomes <span class="badge badge-accent">⚡ auto-ready</span> — no manual pricing needed.</p>
+  <p>Leave a field blank to disable auto-pricing for that type. Tap <strong>Save rules</strong> after editing.</p>
+
+  <pre><code>Example:
+  Trainers    → £ 110
+  T-shirt     → £ 45
+  Tracksuit   → £ 85
+  (others)    → blank = manual price required</code></pre>
+
+  <h3>Unmapped Telegram chats</h3>
+  <p>Any Telegram chat the app has seen but that isn't linked to a vendor appears here, sorted by photo count. For each chat:</p>
+  <div class="steps" style="gap:8px">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Find the chat name</div>
+        <div class="step-desc">The chat title or display name is shown. This is how the contact appears in your Telegram.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Select a vendor from the dropdown</div>
+        <div class="step-desc">Pick the matching vendor code, or <strong>🚫 IGNORE</strong> to permanently silence a chat (e.g. personal contacts, group chats you don't want to scan).</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Tap Map</div>
+        <div class="step-desc">The mapping is saved. All existing UNASSIGNED photos from that chat are immediately reassigned to the chosen vendor.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>One-time setup per vendor.</strong> Once a chat is mapped, all future photos from it are automatically assigned — no captions needed.
+  </div>
+
+  <h3>Run pipeline now</h3>
+  <p>Triggers the AI batch immediately without waiting for the 15-minute cron. Use this after sending a batch of photos and wanting instant Review cards. A toast notification confirms when it completes.</p>
+
+  <h3>Log out</h3>
+  <p>Clears your session cookie. The app stays running — just requires the password to log back in. Session lasts 30 days if you stay logged in.</p>
+</section>
+
+<!-- ── TROUBLESHOOTING ── -->
+<section id="troubleshooting">
+  <h2>Troubleshooting</h2>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">Photos sent but nothing in Inbox</div>
+    <div class="tab-preview-body">
+      1. Tap <strong>↻</strong> to refresh — Inbox only counts today's photos.<br/>
+      2. Check the server is running (the app would show a 401/500 error if it were down).<br/>
+      3. Check if photos arrived as a separate text + separate image messages. The <strong>caption must be on the photo</strong>, not a separate text.<br/>
+      4. If the chat is not yet mapped, look in <strong>Settings → Chat Mapping</strong> — the photos are there as UNASSIGNED.
+    </div>
+  </div>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">Review tab shows nothing after waiting 15 min</div>
+    <div class="tab-preview-body">
+      1. Go to <strong>Settings → Run pipeline now</strong> and check the toast. If it shows an error, the <code>ANTHROPIC_KEY</code> in <code>.env</code> may be missing or invalid.<br/>
+      2. A real Anthropic key starts with <code>sk-ant-</code> and is ~90 characters. Get yours at console.anthropic.com.<br/>
+      3. After fixing the key, restart the server and run the pipeline again.
+    </div>
+  </div>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">Vendor showing as UNASSIGNED</div>
+    <div class="tab-preview-body">
+      Two causes:<br/>
+      <strong>A.</strong> The photo caption had no vendor code — add <code>#VendorCode</code> as caption directly on the photo (not a separate message).<br/>
+      <strong>B.</strong> The chat isn't mapped yet — go to Settings → Unmapped Telegram chats and map it. Existing UNASSIGNED photos are retroactively claimed.
+    </div>
+  </div>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">GO button does nothing / publish fails</div>
+    <div class="tab-preview-body">
+      1. Shopify token (<code>SHOPIFY_TOKEN</code> in <code>.env</code>) may be missing or invalid. It must be a Shopify Admin API access token from <em>Settings → Apps → Develop apps</em>.<br/>
+      2. <code>SHOPIFY_DOMAIN</code> must be your store's <code>myshopify.com</code> domain (e.g. <code>yourstore.myshopify.com</code>).<br/>
+      3. After fixing, restart the server. Check the Queue tab for the specific error message.
+    </div>
+  </div>
+
+  <div class="tab-preview">
+    <div class="tab-preview-header">App asks for password every time</div>
+    <div class="tab-preview-body">
+      The session cookie lasts 30 days. If you're being asked on every visit, check that your browser isn't blocking cookies for <code>localhost</code>, and that you're accessing the app over HTTP (not HTTPS) locally.
+    </div>
+  </div>
+
+  <h3>Required .env keys</h3>
+  <table>
+    <tr><th>Key</th><th>Where to get it</th><th>Notes</th></tr>
+    <tr><td>DATABASE_URL</td><td>neon.tech → your project → Connection Details</td><td>Include <code>sslmode=verify-full</code></td></tr>
+    <tr><td>TELEGRAM_API_ID</td><td>my.telegram.org → API development tools</td><td>7–8 digit number</td></tr>
+    <tr><td>TELEGRAM_API_HASH</td><td>my.telegram.org → API development tools</td><td>32-char hex string</td></tr>
+    <tr><td>TELEGRAM_SESSION</td><td>Generated by <code>node scripts/login.js</code></td><td>Run once after setting API_ID + HASH</td></tr>
+    <tr><td>ANTHROPIC_KEY</td><td>console.anthropic.com → API Keys</td><td>Starts <code>sk-ant-</code>, ~90 chars</td></tr>
+    <tr><td>SHOPIFY_TOKEN</td><td>Shopify Admin → Apps → Develop apps → Admin API token</td><td>Starts <code>shpat_</code></td></tr>
+    <tr><td>SHOPIFY_DOMAIN</td><td>Your store URL</td><td>e.g. <code>yourstore.myshopify.com</code></td></tr>
+    <tr><td>APP_PASSWORD</td><td>Pick any strong password</td><td>Used to log into the PWA</td></tr>
+    <tr><td>PUBLISH_STATUS</td><td>—</td><td><code>ACTIVE</code> or <code>DRAFT</code></td></tr>
+  </table>
+
+  <h3>Re-running Telegram login</h3>
+  <p>If the userbot fails with <em>session invalid/expired</em>, run:</p>
+  <pre><code>node scripts/login.js</code></pre>
+  <p>Follow the prompts (phone number → confirmation code → 2FA password if set). Copy the printed session string into <code>.env</code> as <code>TELEGRAM_SESSION</code>, then restart the server.</p>
+</section>
+
+</div>
+</body>
+</html>
