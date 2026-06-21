@@ -74,9 +74,15 @@ async function ingestImage(buffer, meta) {
 }
 
 // ── analysis prompt ────────────────────────────────────────────────────────────
-function analysisPrompt() {
-  return `You are a fashion product analyst for a UK menswear store. These photo(s) show ONE product (possibly from multiple angles). Return ONLY valid JSON, no markdown, with exactly these fields:
-{"productType":"one of [${vendors.PRODUCT_TYPES.map((t) => `"${t}"`).join(',')}] or \"Unknown\"","brand":"visible brand or Unknown","styleName":"model/style name or empty string","colours":["colour1"],"isFootwear":false,"confidence":"high or low","notes":"any flags, e.g. blurry, multiple products, counterfeit doubt"}`;
+// Images may be a single product (multiple angles) OR several different
+// products a vendor sent back-to-back — the model must split them, not assume one.
+function analysisPrompt(imageCount) {
+  return `You are a fashion product analyst for a UK menswear store. You are shown ${imageCount} image(s), labelled "Image 0" through "Image ${imageCount - 1}" in that order before each photo.
+
+These images may show ONE product (e.g. multiple angles of the same item) OR MULTIPLE DIFFERENT products (e.g. a vendor sent several distinct items in one batch). Group images that show the same physical item together; put different items in separate entries. Do not merge unrelated items just because they were sent together.
+
+Return ONLY a valid JSON array, no markdown, with one entry per distinct product:
+[{"imageIndices":[0,1],"productType":"one of [${vendors.PRODUCT_TYPES.map((t) => `"${t}"`).join(',')}] or \"Unknown\"","brand":"visible brand or Unknown","styleName":"model/style name or empty string","colours":["colour1"],"isFootwear":false,"confidence":"high or low","notes":"any flags, e.g. blurry, counterfeit doubt"}]`;
 }
 
 // ── batch cycle ────────────────────────────────────────────────────────────────
@@ -113,7 +119,8 @@ async function runBatchCycle() {
       const group = groups[i];
       const customId = `p${Date.now()}-${i}`;
       const content = [];
-      for (const img of group) {
+      group.forEach((img, idx) => {
+        content.push({ type: 'text', text: `Image ${idx}:` });
         content.push({
           type: 'image',
           source: {
@@ -122,13 +129,13 @@ async function runBatchCycle() {
             data: fs.readFileSync(img.file_path).toString('base64'),
           },
         });
-      }
-      content.push({ type: 'text', text: analysisPrompt() });
+      });
+      content.push({ type: 'text', text: analysisPrompt(group.length) });
       requests.push({
         custom_id: customId,
         params: {
           model: MODEL,
-          max_tokens: 500,
+          max_tokens: 1000,
           messages: [{ role: 'user', content }],
         },
       });
@@ -206,29 +213,34 @@ async function pollBatchUntilDone(state) {
         );
         continue;
       }
-      const text = result.result.message.content.find((b) => b.type === 'text')?.text || '{}';
-      const analysis = parseAnalysis(text);
-
-      for (const hash of map.hashes) {
-        await db.query(
-          `INSERT INTO analyses (hash, analysis, model, analysed_at)
-           VALUES ($1, $2, $3, now())
-           ON CONFLICT (hash) DO UPDATE SET analysis = $2, model = $3, analysed_at = now()`,
-          [hash, JSON.stringify(analysis), MODEL]
-        );
-      }
-      await db.query(`UPDATE images SET status = 'analysed' WHERE hash = ANY($1)`, [map.hashes]);
-
-      const key = [map.vendor, analysis.brand, analysis.productType, analysis.styleName].join('|');
-      if (!grouped[key]) {
-        grouped[key] = { vendor: map.vendor, analysis, hashes: [], lowConf: false, notes: new Set() };
-      }
-      grouped[key].hashes.push(...map.hashes);
-      if (analysis.confidence !== 'high') grouped[key].lowConf = true;
-      if (analysis.notes) grouped[key].notes.add(String(analysis.notes));
-
+      const text = result.result.message.content.find((b) => b.type === 'text')?.text || '[]';
+      const analyses = parseAnalyses(text, map.hashes.length);
       const pv = (stats.perVendor[map.vendor] ||= { photos: 0, products: 0 });
-      pv.photos += map.hashes.length;
+
+      for (const analysis of analyses) {
+        const hashes = analysis.imageIndices.map((i) => map.hashes[i]).filter(Boolean);
+        if (!hashes.length) continue;
+
+        for (const hash of hashes) {
+          await db.query(
+            `INSERT INTO analyses (hash, analysis, model, analysed_at)
+             VALUES ($1, $2, $3, now())
+             ON CONFLICT (hash) DO UPDATE SET analysis = $2, model = $3, analysed_at = now()`,
+            [hash, JSON.stringify(analysis), MODEL]
+          );
+        }
+        await db.query(`UPDATE images SET status = 'analysed' WHERE hash = ANY($1)`, [hashes]);
+
+        const key = [map.vendor, analysis.brand, analysis.productType, analysis.styleName].join('|');
+        if (!grouped[key]) {
+          grouped[key] = { vendor: map.vendor, analysis, hashes: [], lowConf: false, notes: new Set() };
+        }
+        grouped[key].hashes.push(...hashes);
+        if (analysis.confidence !== 'high') grouped[key].lowConf = true;
+        if (analysis.notes) grouped[key].notes.add(String(analysis.notes));
+
+        pv.photos += hashes.length;
+      }
     }
 
     const priceRules = await db.query('SELECT product_type, price FROM price_rules');
@@ -267,23 +279,40 @@ async function pollBatchUntilDone(state) {
   }
 }
 
-function parseAnalysis(text) {
+// Splits one model response into per-product entries, each naming which image
+// indices (within this request) belong to it. Any index the model omits gets
+// its own fallback "Unknown" entry so a photo never gets stuck unclassified.
+function parseAnalyses(text, imageCount) {
+  const toItem = (p) => ({
+    productType: String(p?.productType || 'Unknown'),
+    brand: String(p?.brand || 'Unknown'),
+    styleName: String(p?.styleName || ''),
+    colours: Array.isArray(p?.colours) && p.colours.length ? p.colours.map(String) : ['Black'],
+    isFootwear: Boolean(p?.isFootwear),
+    confidence: p?.confidence === 'high' ? 'high' : 'low',
+    notes: String(p?.notes || ''),
+  });
+  const fallback = (imageIndices, notes) => ({ ...toItem({}), imageIndices, notes });
+  const allIndices = Array.from({ length: imageCount }, (_, i) => i);
+
   try {
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
-    return {
-      productType: String(parsed.productType || 'Unknown'),
-      brand: String(parsed.brand || 'Unknown'),
-      styleName: String(parsed.styleName || ''),
-      colours: Array.isArray(parsed.colours) ? parsed.colours.map(String) : ['Black'],
-      isFootwear: Boolean(parsed.isFootwear),
-      confidence: parsed.confidence === 'high' ? 'high' : 'low',
-      notes: String(parsed.notes || ''),
-    };
+    const arr = Array.isArray(parsed) ? parsed : [parsed];
+    const seen = new Set();
+    const items = [];
+    for (const p of arr) {
+      const indices = (Array.isArray(p.imageIndices) ? p.imageIndices : [])
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n >= 0 && n < imageCount && !seen.has(n));
+      indices.forEach((n) => seen.add(n));
+      if (indices.length) items.push({ ...toItem(p), imageIndices: indices });
+    }
+    for (const i of allIndices) {
+      if (!seen.has(i)) items.push(fallback([i], 'Not classified by analysis'));
+    }
+    return items.length ? items : [fallback(allIndices, 'Analysis parse error')];
   } catch {
-    return {
-      productType: 'Unknown', brand: 'Unknown', styleName: '', colours: ['Black'],
-      isFootwear: false, confidence: 'low', notes: 'Analysis parse error',
-    };
+    return [fallback(allIndices, 'Analysis parse error')];
   }
 }
 
