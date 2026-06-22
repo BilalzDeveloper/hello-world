@@ -100,7 +100,9 @@
   .badge-low{background:var(--bad-bg);color:var(--bad)}
   .badge-state{background:var(--state-bg);color:var(--state-fg)}
   .thumb-row{display:flex;gap:8px;flex-wrap:wrap}
-  .thumb{width:80px;height:80px;object-fit:cover;border-radius:2px;border:1px solid var(--border)}
+  .thumb{width:80px;height:80px;object-fit:cover;border-radius:2px;border:1px solid var(--border);cursor:pointer}
+  .thumb.thumb-selected{border:2px solid var(--accent)}
+  .merge-chk{width:auto;cursor:pointer}
   .field-row{display:flex;gap:12px;flex-wrap:wrap}
   .field{flex:1 1 150px;display:flex;flex-direction:column;gap:4px}
   .field-label{font-size:10px;color:var(--text-fainter);letter-spacing:1px;text-transform:uppercase}
@@ -179,6 +181,7 @@
     <input type="text" id="bytype-price" placeholder="£ type" inputmode="decimal" style="width:70px"/>
     <button class="btn-sm" onclick="applyTypePrice()">Apply</button>
     <button class="btn-sm" onclick="approveHighConfidence()">✓ Approve all high-conf</button>
+    <button class="btn-sm" id="btn-merge" style="display:none" onclick="doMerge()">🔗 Merge selected</button>
   </div>
   <div id="product-list"></div>
   <div id="go-bar" style="display:none">
@@ -229,6 +232,8 @@ let CFG = { vendors: [], productTypes: [], collectionMap: {}, footwearTypes: [] 
 let reviewRows = [];
 let currentTab = 'inbox';
 let queueTimer = null;
+let mergeIds = new Set();   // review_queue ids checked for merge
+let splitSel = {};          // review_queue id -> Set of image hashes checked for split
 
 // ── API helper ────────────────────────────────────────────────────────────────
 async function api(path, opts = {}) {
@@ -382,6 +387,8 @@ async function loadReview() {
   const vendor = document.getElementById('review-vendor').value;
   const list = document.getElementById('product-list');
   list.innerHTML = '<div class="empty pulsing">Loading…</div>';
+  mergeIds.clear();
+  splitSel = {};
   reviewRows = await api('/api/review' + (vendor ? '?vendor=' + encodeURIComponent(vendor) : ''));
   renderReview();
 }
@@ -392,6 +399,7 @@ function renderReview() {
   if (!reviewRows.length) {
     list.innerHTML = '<div class="empty">Nothing to review.</div>';
     document.getElementById('go-bar').style.display = 'none';
+    updateMergeBar();
     return;
   }
   reviewRows.forEach((row, idx) => {
@@ -402,8 +410,10 @@ function renderReview() {
     const stateBadge = row.state === 'auto_ready' ? '⚡ auto-ready'
       : row.state === 'approved' ? '✅ approved'
       : row.state === 'failed' ? '❌ failed' : '📝 needs review';
+    const sel = splitSel[row.id];
     card.innerHTML = `
       <div class="product-header">
+        <input type="checkbox" class="merge-chk" title="Select to merge with another product" ${mergeIds.has(row.id) ? 'checked' : ''} onchange="toggleMergeSelect(${row.id}, this.checked)"/>
         <span class="product-num">#${row.id}</span>
         <span class="badge ${row.confidence === 'low' ? 'badge-low' : 'badge-high'}">${row.confidence === 'low' ? '⚠️ Low confidence' : '✓ Good'}</span>
         <span class="badge badge-state">${stateBadge}</span>
@@ -411,7 +421,12 @@ function renderReview() {
         <button class="btn-xs" onclick="skipRow(${idx})">✕ Skip</button>
         ${row.state !== 'approved' ? `<button class="btn-xs" onclick="approveRow(${idx})">✓ Approve</button>` : ''}
       </div>
-      <div class="thumb-row">${(row.imageUrls || []).map(u => `<img class="thumb" loading="lazy" src="${u}"/>`).join('')}</div>
+      <div class="thumb-row">${(row.imageUrls || []).map((u, i) => {
+        const hash = (row.image_hashes || [])[i];
+        const isSel = sel && sel.has(hash);
+        return `<img class="thumb${isSel ? ' thumb-selected' : ''}" loading="lazy" src="${u}" title="Click to select for splitting out" onclick="toggleSplitSelect(${row.id},'${hash}')"/>`;
+      }).join('')}</div>
+      ${sel && sel.size ? `<button class="btn-xs" onclick="doSplit(${idx})">✂ Split selected (${sel.size}) into new product</button>` : ''}
       <div class="field-row">
         <div class="field"><label class="field-label">Title</label><input class="field-input" value="${esc(row.title)}" onchange="editRow(${idx},'title',this.value)"/></div>
         <div class="field"><label class="field-label">Type</label><select class="field-input" onchange="editRow(${idx},'product_type',this.value)">${typeOpts}</select></div>
@@ -426,9 +441,50 @@ function renderReview() {
     list.appendChild(card);
   });
   updateGoBar();
+  updateMergeBar();
 }
 
 function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+// ── MERGE / SPLIT ─────────────────────────────────────────────────────────────
+function toggleMergeSelect(id, checked) {
+  if (checked) mergeIds.add(id); else mergeIds.delete(id);
+  updateMergeBar();
+}
+
+function updateMergeBar() {
+  const btn = document.getElementById('btn-merge');
+  if (!btn) return;
+  btn.style.display = mergeIds.size >= 2 ? 'inline-block' : 'none';
+  btn.textContent = `🔗 Merge selected (${mergeIds.size})`;
+}
+
+async function doMerge() {
+  const ids = [...mergeIds];
+  if (ids.length < 2) return;
+  try {
+    const merged = await api('/api/review/merge', { method: 'POST', json: { ids, keepId: ids[0] } });
+    toast(`✓ Merged into #${merged.id} — set its price/details and approve`);
+    loadReview();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
+
+function toggleSplitSelect(id, hash) {
+  const set = splitSel[id] || (splitSel[id] = new Set());
+  if (set.has(hash)) set.delete(hash); else set.add(hash);
+  renderReview();
+}
+
+async function doSplit(idx) {
+  const row = reviewRows[idx];
+  const set = splitSel[row.id];
+  if (!set || !set.size) return;
+  try {
+    await api('/api/review/' + row.id + '/split', { method: 'POST', json: { hashes: [...set] } });
+    toast('✓ Split into a new product — fill in its details');
+    loadReview();
+  } catch (e) { toast('⚠️ ' + e.message); }
+}
 
 async function editRow(idx, field, value) {
   const row = reviewRows[idx];
@@ -458,6 +514,8 @@ async function skipRow(idx) {
   try {
     await api('/api/review/' + row.id, { method: 'PATCH', json: { action: 'skip' } });
     reviewRows.splice(idx, 1);
+    mergeIds.delete(row.id);
+    delete splitSel[row.id];
     renderReview();
   } catch (e) { toast('⚠️ ' + e.message); }
 }

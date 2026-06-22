@@ -3,3 +3,4 @@ node_modules
 *.session
 /data
 .DS_Store
+*.log

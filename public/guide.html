@@ -412,17 +412,44 @@
     <tr><td>£ all → Apply</td><td>Set the same price on every unapproved card currently visible.</td></tr>
     <tr><td>Type + £ type → Apply</td><td>Set a price only on cards of the selected product type.</td></tr>
     <tr><td>✓ Approve all high-conf</td><td>One tap to approve everything with <span class="badge badge-good">✓ Good</span> confidence that already has a price.</td></tr>
+    <tr><td>🔗 Merge selected</td><td>Appears once you've checked 2+ cards (see Merge below). Combines them into one product.</td></tr>
   </table>
 
   <h3>Per-card actions</h3>
   <p><strong>✕ Skip</strong> — Discards the product and marks its photos as <code>skipped</code>. Cannot be undone from the UI.</p>
   <p><strong>✓ Approve</strong> — Marks the card as approved. A price is required. Once all editing is done, use the GO bar.</p>
 
+  <h3>Fixing grouping mistakes — merge &amp; split</h3>
+  <p>The AI groups photos into products automatically, but it can still get it wrong in either direction. Two manual controls fix this from the card itself:</p>
+
+  <div class="steps" style="gap:10px">
+    <div class="step">
+      <div class="step-num">M</div>
+      <div class="step-body">
+        <div class="step-title">Merge — when one item got split into 2+ cards</div>
+        <div class="step-desc">
+          Tick the checkbox in the header of each card that's actually the same item (same vendor only), then tap <strong>🔗 Merge selected</strong> in the top bar.
+          All their photos combine into the first card you checked; the other card(s) are removed. The merged card resets to <span class="badge badge-state">📝 needs review</span> — re-check the price before approving.
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">S</div>
+      <div class="step-body">
+        <div class="step-title">Split — when 2+ items got bundled into one card</div>
+        <div class="step-desc">
+          Tap the thumbnail(s) that don't belong (they get a yellow outline), then tap <strong>✂ Split selected into new product</strong> below the photo row.
+          Those photos move into a brand-new card — fill in its title, type, colours, price etc. yourself, since it hasn't been re-analysed. You can't split out every photo; at least one must stay on the original card.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h3>Publishing</h3>
   <p>When at least one card is approved, a yellow <strong>🚀 GO</strong> bar appears at the bottom showing how many are approved. Tap it to send them all to Shopify. The app switches to the Queue tab automatically.</p>
 
   <div class="callout">
-    <strong>Photos arriving within 10 minutes of each other from the same chat are grouped</strong> into a single product card (up to 4 images per card). This means a vendor who sends multiple angles of the same item produces one card, not several.
+    <strong>Photos arriving within 10 minutes of each other from the same chat are grouped</strong> and sent to the AI together (up to 4 images), which then decides — per photo — whether they're one product or several. If it still gets it wrong, use Merge / Split above.
   </div>
 </section>
 

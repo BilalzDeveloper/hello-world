@@ -230,6 +230,79 @@ app.post('/api/review/approve-bulk', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Same vendor's photos the AI split into separate cards but are really one
+// item (e.g. different angles) — combine into a single product.
+app.post('/api/review/merge', async (req, res, next) => {
+  try {
+    const { ids, keepId } = req.body || {};
+    if (!Array.isArray(ids) || ids.length < 2 || !ids.every((i) => Number.isInteger(i))) {
+      return res.status(400).json({ error: 'ids[] (2 or more) required' });
+    }
+    if (!Number.isInteger(keepId) || !ids.includes(keepId)) {
+      return res.status(400).json({ error: 'keepId must be one of ids' });
+    }
+    const { rows } = await db.query('SELECT * FROM review_queue WHERE id = ANY($1)', [ids]);
+    if (rows.length !== ids.length) return res.status(404).json({ error: 'One or more products not found' });
+    if (rows.some((r) => r.state === 'published')) {
+      return res.status(409).json({ error: 'Cannot merge an already-published product' });
+    }
+    const vendor = rows[0].vendor;
+    if (rows.some((r) => r.vendor !== vendor)) {
+      return res.status(400).json({ error: 'Can only merge products from the same vendor' });
+    }
+
+    const hashes = [...new Set(rows.flatMap((r) => r.image_hashes || []))];
+    const otherIds = ids.filter((i) => i !== keepId);
+
+    const { rows: updated } = await db.query(
+      `UPDATE review_queue SET image_hashes = $1, state = 'needs_review' WHERE id = $2 RETURNING *`,
+      [hashes, keepId]
+    );
+    await db.query('DELETE FROM review_queue WHERE id = ANY($1)', [otherIds]);
+    res.json(updated[0]);
+  } catch (e) { next(e); }
+});
+
+// One card actually contains photos of more than one item (the AI merged
+// them by mistake) — break the selected photos out into a new product.
+app.post('/api/review/:id/split', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: 'Bad id' });
+    const hashesToSplit = req.body?.hashes;
+    if (!Array.isArray(hashesToSplit) || !hashesToSplit.length) {
+      return res.status(400).json({ error: 'hashes[] required' });
+    }
+    const cur = await db.query('SELECT * FROM review_queue WHERE id = $1', [id]);
+    if (!cur.rows.length) return res.status(404).json({ error: 'Not found' });
+    const row = cur.rows[0];
+    if (row.state === 'published') return res.status(409).json({ error: 'Already published' });
+
+    const current = row.image_hashes || [];
+    const splitSet = new Set(hashesToSplit.map(String));
+    const remaining = current.filter((h) => !splitSet.has(h));
+    const moving = current.filter((h) => splitSet.has(h));
+    if (!moving.length) return res.status(400).json({ error: 'None of those photos belong to this product' });
+    if (!remaining.length) return res.status(400).json({ error: 'Cannot split out every photo — at least one must remain' });
+
+    const { rows: updated } = await db.query(
+      `UPDATE review_queue SET image_hashes = $1, state = 'needs_review' WHERE id = $2 RETURNING *`,
+      [remaining, id]
+    );
+    const { rows: created } = await db.query(
+      `INSERT INTO review_queue
+         (vendor, title, product_type, collection, colours, sizes, price, confidence, notes, image_hashes, state, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'needs_review', now())
+       RETURNING *`,
+      [
+        row.vendor, `${row.vendor} product`, 'Unknown', vendors.collectionFor('Unknown'),
+        '', vendors.sizesFor('Unknown', false), null, 'low', `Split from #${id}`, moving,
+      ]
+    );
+    res.json({ original: updated[0], created: created[0] });
+  } catch (e) { next(e); }
+});
+
 // ── publish queue ──────────────────────────────────────────────────────────────
 app.post('/api/publish', async (req, res, next) => {
   try {
