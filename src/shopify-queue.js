@@ -166,7 +166,7 @@ async function workLoop() {
   if (published || failed) {
     const text = [`🚀 UKSC publish complete`, `✅ ${published} published`]
       .concat(failed ? [`❌ ${failed} failed — see Queue tab`] : [])
-      .concat([`\n${process.env.APP_URL || 'https://uksc.fly.dev'}`]).join('\n');
+      .concat([`\n${process.env.APP_URL || 'http://localhost:3000'}`]).join('\n');
     try { await require('./userbot').sendSavedMessage(text); } catch {}
   }
 }

@@ -1,7 +1,6 @@
 // UKSC v2 — Express server: serves /public + JSON API behind app-password auth.
 
 require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
@@ -14,9 +13,8 @@ const pipeline = require('./pipeline');
 const shopifyQueue = require('./shopify-queue');
 
 const PORT = Number(process.env.PORT || 3000);
-// Fly volume when present; falls back to ./data for laptop/local runs.
-const DATA_DIR = process.env.DATA_DIR
-  || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+// Image + state storage. Override with DATA_DIR if you want another path.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const APP_PASSWORD = process.env.APP_PASSWORD || '';
 const SESSION_DAYS = 30;
 const COOKIE_NAME = 'uksc_session';

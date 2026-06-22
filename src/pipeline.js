@@ -12,15 +12,14 @@ const Anthropic = require('@anthropic-ai/sdk');
 const db = require('./db');
 const vendors = require('./vendors');
 
-// Fly volume when present; falls back to ./data for laptop/local runs.
-const DATA_DIR = process.env.DATA_DIR
-  || (fs.existsSync('/data') ? '/data' : path.join(__dirname, '..', 'data'));
+// Image + state storage. Override with DATA_DIR if you want another path.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const IMG_DIR = path.join(DATA_DIR, 'images');
 const BATCH_STATE_FILE = path.join(DATA_DIR, 'batch-state.json');
 const MODEL = 'claude-haiku-4-5';
 const GROUP_WINDOW_MS = 10 * 60 * 1000; // photos within 10 min = same product
 const MAX_IMAGES_PER_REQUEST = 4;
-const APP_URL = process.env.APP_URL || 'https://uksc.fly.dev';
+const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
 let anthropic = null;
 function client() {
