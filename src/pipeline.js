@@ -17,6 +17,11 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const IMG_DIR = path.join(DATA_DIR, 'images');
 const BATCH_STATE_FILE = path.join(DATA_DIR, 'batch-state.json');
 const MODEL = 'claude-haiku-4-5';
+// claude-haiku-4-5 pricing per platform.claude.com/docs/en/pricing — $/MTok.
+// Message Batches API is 50% off standard rates.
+const PRICE_PER_MTOK_INPUT = 1.00;
+const PRICE_PER_MTOK_OUTPUT = 5.00;
+const BATCH_DISCOUNT = 0.5;
 const GROUP_WINDOW_MS = 10 * 60 * 1000; // photos within 10 min = same product
 const MAX_IMAGES_PER_REQUEST = 4;
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
@@ -212,6 +217,16 @@ async function pollBatchUntilDone(state) {
         );
         continue;
       }
+      const usage = result.result.message.usage;
+      if (usage) {
+        const cost = (usage.input_tokens / 1e6 * PRICE_PER_MTOK_INPUT
+          + usage.output_tokens / 1e6 * PRICE_PER_MTOK_OUTPUT) * BATCH_DISCOUNT;
+        await db.query(
+          `INSERT INTO ai_usage (batch_id, model, input_tokens, output_tokens, cost_usd) VALUES ($1, $2, $3, $4, $5)`,
+          [batchId, MODEL, usage.input_tokens, usage.output_tokens, cost]
+        );
+      }
+
       const text = result.result.message.content.find((b) => b.type === 'text')?.text || '[]';
       const analyses = parseAnalyses(text, map.hashes.length);
       const pv = (stats.perVendor[map.vendor] ||= { photos: 0, products: 0 });
@@ -244,11 +259,13 @@ async function pollBatchUntilDone(state) {
 
     const priceRules = await db.query('SELECT product_type, price FROM price_rules');
     const ruleFor = Object.fromEntries(priceRules.rows.map((r) => [r.product_type, r.price]));
+    const collectionRules = await db.query('SELECT product_type, collection FROM collection_rules');
+    const collectionFor = Object.fromEntries(collectionRules.rows.map((r) => [r.product_type, r.collection]));
 
     for (const g of Object.values(grouped)) {
       const a = g.analysis;
       const type = vendors.PRODUCT_TYPES.includes(a.productType) ? a.productType : 'Unknown';
-      const collection = vendors.collectionFor(type);
+      const collection = collectionFor[type] || vendors.collectionFor(type);
       const confidence = g.lowConf || type === 'Unknown' ? 'low' : 'high';
       const price = confidence === 'high' && ruleFor[type] != null ? ruleFor[type] : null;
       const state_ = price != null ? 'auto_ready' : 'needs_review';

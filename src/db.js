@@ -2,7 +2,7 @@
 // bootstrap() runs on boot: creates tables if absent and seeds price_rules.
 
 const { Pool } = require('pg');
-const { PRICE_SEED } = require('./vendors');
+const { PRICE_SEED, COLLECTION_MAP } = require('./vendors');
 
 if (!process.env.DATABASE_URL) {
   console.error('FATAL: DATABASE_URL is not set (Neon connection string).');
@@ -72,6 +72,14 @@ CREATE TABLE IF NOT EXISTS price_rules (
   price        NUMERIC
 );
 
+-- Manager-editable product_type -> Shopify collection defaults (Settings ->
+-- collection mapping). Seeded from vendors.COLLECTION_MAP; overrides it once
+-- a row exists, same pattern as price_rules/PRICE_SEED.
+CREATE TABLE IF NOT EXISTS collection_rules (
+  product_type TEXT PRIMARY KEY,
+  collection   TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS publish_log (
   id                 SERIAL PRIMARY KEY,
   review_id          INT,
@@ -82,9 +90,22 @@ CREATE TABLE IF NOT EXISTS publish_log (
   finished_at        TIMESTAMPTZ
 );
 
+-- One row per AI batch request (one product candidate), so we can show
+-- running spend without ever needing Anthropic's (nonexistent) balance API.
+CREATE TABLE IF NOT EXISTS ai_usage (
+  id            SERIAL PRIMARY KEY,
+  batch_id      TEXT,
+  model         TEXT,
+  input_tokens  INT,
+  output_tokens INT,
+  cost_usd      NUMERIC,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_images_status   ON images(status);
 CREATE INDEX IF NOT EXISTS idx_images_received ON images(received_at);
 CREATE INDEX IF NOT EXISTS idx_review_state    ON review_queue(state);
+CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage(created_at);
 `;
 
 async function bootstrap() {
@@ -96,7 +117,14 @@ async function bootstrap() {
       [type, price]
     );
   }
-  console.log('db: schema ready, price_rules seeded');
+  for (const [type, collection] of Object.entries(COLLECTION_MAP)) {
+    await pool.query(
+      `INSERT INTO collection_rules (product_type, collection)
+       VALUES ($1, $2) ON CONFLICT (product_type) DO NOTHING`,
+      [type, collection]
+    );
+  }
+  console.log('db: schema ready, price_rules + collection_rules seeded');
 }
 
 module.exports = {

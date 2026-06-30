@@ -16,7 +16,9 @@ const COLLECTION_MAP = {
   'T-shirt': 'T-Shirts For Men', 'Top': 'T-Shirts For Men', 'Polo': 'T-Shirts For Men',
   'Shorts': 'Boxers and Shorts', 'Board shorts': 'Boxers and Shorts', 'Swim shorts': 'Boxers and Shorts', 'Sweat shorts': 'Boxers and Shorts',
   'Tracksuit': 'Tracksuits For Men', 'Joggers': 'Tracksuits For Men', 'Sweatpants': 'Tracksuits For Men',
-  'Hoodie': 'Tracksuits For Men', 'Jacket': 'Tracksuits For Men', 'Coat': 'Tracksuits For Men',
+  // Hoodie/Jacket/Coat used to default to "Tracksuits For Men" — the store has
+  // dedicated collections for these now, so route to those instead.
+  'Hoodie': 'Hoodies & Jumpers (Men)', 'Jacket': 'Jackets & Warmers', 'Coat': 'Jackets & Warmers',
   'Trainers': 'Trainers & Footwear', 'Sneakers': 'Trainers & Footwear', 'Shoes': 'Trainers & Footwear',
   'Jeans': 'Jeans', 'Trousers': 'Jeans', 'Bag': 'Unisex Bags', 'Backpack': 'Unisex Bags',
   'Socks': 'Socks For Men', 'Boxers': 'Boxers and Shorts', 'Underwear': 'Boxers and Shorts',
@@ -24,6 +26,23 @@ const COLLECTION_MAP = {
 };
 
 const PRODUCT_TYPES = Object.keys(COLLECTION_MAP);
+
+// Real Shopify collections at ukstylishclub.com (inspected live; excludes the
+// "All Collections" catch-all, which isn't a meaningful manual category).
+// This is what the Listing review collection picker and the admin mapping
+// page in Settings let a manager choose between — independent of which
+// PRODUCT_TYPES the AI happens to know about.
+const COLLECTIONS = [
+  'Beddings, Mats, Towels and Lamps', 'Belts For Men', 'Boxers and Shorts', 'Boys Footwear',
+  'Boys T-Shirt', 'Bracelets', 'Candles', 'Cap, Scarf and Gloves', 'Caps and Gloves for Men',
+  'Earrings', 'Electric Cigarette', 'Girls Footwear', 'Girls Jacket', 'Girls Tracksuits',
+  'Headphones', 'Hoodies & Jumpers (Men)', 'Hoodies & Jumpers (Women)', 'Jacket For Boys',
+  'Jackets & Warmers', 'Jackets For Women', 'Jeans', 'Makeup', 'Men Wallet & Bag',
+  'Perfume For Him', 'Perfumes For Her', 'Shoes', 'Shoes and Slippers',
+  'Shorts, Underwear & Swim Suits', 'Slipper For Men', 'Socks For Men', 'Sunglasses (Uni-Sex)',
+  'T-Shirts For Men', 'Tracksuit and Jeans For Boys', 'Tracksuits (Women)', 'Tracksuits For Men',
+  'Trainers & Footwear', 'Unisex Bags', 'Watches For Men', 'Watches For Women', 'Women Belts',
+];
 const FOOTWEAR_TYPES = ['Trainers', 'Sneakers', 'Shoes'];
 const CLOTHING_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const SHOE_SIZES = ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10', 'UK 11', 'UK 12'];
@@ -73,6 +92,7 @@ module.exports = {
   VENDOR_UNASSIGNED,
   VENDOR_IGNORED,
   COLLECTION_MAP,
+  COLLECTIONS,
   PRODUCT_TYPES,
   FOOTWEAR_TYPES,
   CLOTHING_SIZES,

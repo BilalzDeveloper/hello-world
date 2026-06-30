@@ -95,6 +95,7 @@ app.get('/api/config', (_req, res) => {
     vendors: vendors.VENDORS,
     productTypes: vendors.PRODUCT_TYPES,
     collectionMap: vendors.COLLECTION_MAP,
+    collections: vendors.COLLECTIONS,
     footwearTypes: vendors.FOOTWEAR_TYPES,
   });
 });
@@ -145,7 +146,7 @@ app.get('/api/review', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-const EDITABLE = ['title', 'product_type', 'colours', 'sizes', 'price', 'notes'];
+const EDITABLE = ['title', 'product_type', 'colours', 'sizes', 'price', 'notes', 'collection'];
 
 app.patch('/api/review/:id', async (req, res, next) => {
   try {
@@ -166,11 +167,16 @@ app.patch('/api/review/:id', async (req, res, next) => {
       return res.json({ ok: true, skipped: true });
     }
 
+    const body = req.body || {};
+    // An explicit `collection` always wins over product_type's auto-derived
+    // default — handled after the loop so it can't be clobbered by it.
+    const explicitCollection = 'collection' in body;
+
     const sets = [];
     const params = [];
     for (const f of EDITABLE) {
-      if (!(f in (req.body || {}))) continue;
-      let v = req.body[f];
+      if (f === 'collection' || !(f in body)) continue;
+      let v = body[f];
       if (f === 'price') {
         v = v === null || v === '' ? null : Number(v);
         if (v !== null && (!Number.isFinite(v) || v < 0)) return res.status(400).json({ error: 'Bad price' });
@@ -183,12 +189,22 @@ app.patch('/api/review/:id', async (req, res, next) => {
         }
         params.push(v);
         sets.push(`product_type = $${params.length}`);
-        params.push(vendors.collectionFor(v));
-        sets.push(`collection = $${params.length}`);
+        if (!explicitCollection) {
+          const rule = await db.query('SELECT collection FROM collection_rules WHERE product_type = $1', [v]);
+          params.push(rule.rows[0]?.collection || vendors.collectionFor(v));
+          sets.push(`collection = $${params.length}`);
+        }
         continue;
       }
       params.push(v);
       sets.push(`${f} = $${params.length}`);
+    }
+
+    if (explicitCollection) {
+      const v = String(body.collection ?? '').slice(0, 500);
+      if (!vendors.COLLECTIONS.includes(v)) return res.status(400).json({ error: 'Unknown collection' });
+      params.push(v);
+      sets.push(`collection = $${params.length}`);
     }
 
     if (action === 'approve') {
@@ -397,6 +413,67 @@ app.put('/api/price-rules', async (req, res, next) => {
     }
     const { rows } = await db.query('SELECT product_type, price FROM price_rules ORDER BY product_type');
     res.json(rows);
+  } catch (e) { next(e); }
+});
+
+// ── collection rules (default product_type -> Shopify collection mapping) ──────
+app.get('/api/collection-rules', async (_req, res, next) => {
+  try {
+    const { rows } = await db.query('SELECT product_type, collection FROM collection_rules ORDER BY product_type');
+    res.json(rows);
+  } catch (e) { next(e); }
+});
+
+app.put('/api/collection-rules', async (req, res, next) => {
+  try {
+    const rules = req.body?.rules;
+    if (!Array.isArray(rules)) return res.status(400).json({ error: 'rules[] required' });
+    for (const r of rules) {
+      if (!vendors.PRODUCT_TYPES.includes(r.product_type)) {
+        return res.status(400).json({ error: `Unknown type: ${r.product_type}` });
+      }
+      if (!vendors.COLLECTIONS.includes(r.collection)) {
+        return res.status(400).json({ error: `Unknown collection: ${r.collection}` });
+      }
+      await db.query(
+        `INSERT INTO collection_rules (product_type, collection) VALUES ($1, $2)
+         ON CONFLICT (product_type) DO UPDATE SET collection = $2`,
+        [r.product_type, r.collection]
+      );
+    }
+    const { rows } = await db.query('SELECT product_type, collection FROM collection_rules ORDER BY product_type');
+    res.json(rows);
+  } catch (e) { next(e); }
+});
+
+// ── AI usage / cost ──────────────────────────────────────────────────────────
+// Anthropic has no API for remaining account balance (Console-only) — this is
+// spend WE calculate from each batch result's token usage, not a live balance.
+app.get('/api/ai-usage', async (_req, res, next) => {
+  try {
+    const periods = {
+      today: `created_at >= date_trunc('day', now())`,
+      month: `created_at >= date_trunc('month', now())`,
+      allTime: `true`,
+    };
+    const out = {};
+    for (const [key, where] of Object.entries(periods)) {
+      const { rows } = await db.query(
+        `SELECT count(*) AS requests,
+                coalesce(sum(input_tokens), 0) AS input_tokens,
+                coalesce(sum(output_tokens), 0) AS output_tokens,
+                coalesce(sum(cost_usd), 0) AS cost_usd
+         FROM ai_usage WHERE ${where}`
+      );
+      const r = rows[0];
+      out[key] = {
+        requests: Number(r.requests),
+        inputTokens: Number(r.input_tokens),
+        outputTokens: Number(r.output_tokens),
+        costUsd: Number(r.cost_usd),
+      };
+    }
+    res.json(out);
   } catch (e) { next(e); }
 });
 

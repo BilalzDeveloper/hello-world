@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:'Hanken Grotesk',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:#2b2b2b;background:#f1f1f1;}
+  ::-webkit-scrollbar{width:11px;height:11px;}
+  ::-webkit-scrollbar-thumb{background:#cfcfcf;border-radius:9px;border:3px solid transparent;background-clip:content-box;}
+  ::-webkit-scrollbar-thumb:hover{background:#bcbcbc;background-clip:content-box;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  @keyframes soToast{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes soDrawer{from{transform:translateX(100%);}to{transform:translateX(0);}}
+  @keyframes soFade{from{opacity:0;}to{opacity:1;}}
+  @keyframes soRise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</helmet>
+
+<div style="display:flex;flex-direction:column;height:100vh;background:#f1f1f1;overflow:hidden;">
+
+  <!-- TOP BAR -->
+  <header style="height:56px;flex:0 0 auto;background:#1a1a1a;display:flex;align-items:center;gap:16px;padding:0 18px 0 16px;color:#fff;z-index:30;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(150deg,#3f4ba8,#2a2f6b);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1-5H5L4 9z"/><path d="M5 9v11h14V9"/><path d="M9.5 20v-6h5v6"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;line-height:1.05;">
+        <span style="font-size:14.5px;font-weight:700;letter-spacing:-.2px;">Store&nbsp;OS</span>
+        <span style="font-size:10px;color:#9a9aa6;font-weight:500;letter-spacing:.3px;">RESELLER OPS</span>
+      </div>
+    </div>
+
+    <div style="flex:0 1 420px;display:flex;align-items:center;gap:8px;background:#2c2c2e;border:1px solid #3a3a3c;border-radius:9px;padding:0 11px;height:34px;color:#a6a6ad;margin-left:6px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+      <span style="font-size:13px;">Search orders, vendors, products…</span>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex;align-items:center;gap:7px;background:#13301f;border:1px solid #1d5236;color:#5fd39a;border-radius:999px;padding:5px 11px 5px 9px;font-size:12px;font-weight:600;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#37d180;box-shadow:0 0 0 3px rgba(55,209,128,.18);"></span>
+      Loop running
+    </div>
+
+    <div style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#c4c4cc;cursor:pointer;" style-hover="background:#2c2c2e;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:9px;padding-left:4px;">
+      <div style="width:31px;height:31px;border-radius:50%;background:#4b53b5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">{{ initial }}</div>
+    </div>
+  </header>
+
+  <div style="display:flex;flex:1;min-height:0;">
+
+    <!-- SIDEBAR -->
+    <nav style="width:248px;flex:0 0 auto;background:#fff;border-right:1px solid #e3e3e3;padding:16px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.6px;color:#9a9a9a;padding:6px 11px 8px;">MANAGE</div>
+
+      <div onClick="{{ goToday }}" style="{{ navToday }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.7V20h13V9.7"/></svg>
+        <span style="flex:1;">Today</span>
+      </div>
+
+      <div onClick="{{ goApprovals }}" style="{{ navApprovals }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.5" width="12" height="16.5" rx="2"/><path d="M9 4.5V3.2h6v1.3"/><path d="m9.4 12.6 1.9 1.9 3.4-3.9"/></svg>
+        <span style="flex:1;">Order approval</span>
+        <sc-if value="{{ cApprovals }}" hint-placeholder-val="{{ true }}"><span style="background:#1a1a1a;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;">{{ cApprovals }}</span></sc-if>
+      </div>
+
+      <div onClick="{{ goListings }}" style="{{ navListings }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l1.9 5.4 5.6.2-4.4 3.4 1.6 5.4L12 14.8l-4.7 2.8 1.6-5.4L4.5 8.8l5.6-.2z"/></svg>
+        <span style="flex:1;">Listing review</span>
+        <sc-if value="{{ cListings }}" hint-placeholder-val="{{ true }}"><span style="background:#b26b00;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;">{{ cListings }}</span></sc-if>
+      </div>
+
+      <div onClick="{{ goVendors }}" style="{{ navVendors }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.2-5H5.2L4 9z"/><path d="M5 9v11h14V9"/><path d="M9.5 20v-5.5h5V20"/></svg>
+        <span style="flex:1;">Vendors</span>
+        <sc-if value="{{ cVendors }}" hint-placeholder-val="{{ true }}"><span style="background:#b26b00;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;">{{ cVendors }}</span></sc-if>
+      </div>
+
+      <div onClick="{{ goCatalog }}" style="{{ navCatalog }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5v3.2l11.5 4.3V6.2L4 10.5z"/><path d="M15.5 8.2 20 6.3v11.4l-4.5-1.9"/><path d="M6.5 14v3.7a1.5 1.5 0 0 0 3 0"/></svg>
+        <span style="flex:1;">Daily catalog</span>
+      </div>
+
+      <div onClick="{{ goAnalytics }}" style="{{ navAnalytics }}" style-hover="background:#f4f4f4;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20.5h18"/><path d="M6 20.5v-6M12 20.5V5M18 20.5v-9"/></svg>
+        <span style="flex:1;">Analytics</span>
+      </div>
+
+      <div style="flex:1;"></div>
+
+      <div style="border-top:1px solid #ececec;margin:8px 4px;padding-top:12px;display:flex;flex-direction:column;gap:9px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#9a9a9a;padding:0 7px;">AUTOMATION</div>
+        <div style="display:flex;align-items:center;gap:9px;padding:2px 7px;font-size:12.5px;color:#616161;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#37b97f;flex:0 0 auto;"></span>
+          <span style="flex:1;">{{ autoPct }} of the loop is hands-off</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;padding:2px 7px;font-size:12.5px;color:#616161;">
+          <span style="width:8px;height:8px;border-radius:50%;background:{{ autoDot }};flex:0 0 auto;"></span>
+          <span style="flex:1;">{{ autoCaption }}</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main style="flex:1;overflow-y:auto;min-width:0;position:relative;">
+      <div style="max-width:1160px;margin:0 auto;padding:28px 34px 64px;">
+
+        <!-- ============ TODAY ============ -->
+        <sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;">
+            <div>
+              <div style="font-size:13px;color:#8a8a8a;font-weight:600;margin-bottom:3px;">{{ todayDate }}</div>
+              <h1 style="font-size:26px;font-weight:700;letter-spacing:-.5px;margin:0;color:#1a1a1a;">Good morning, {{ managerName }}</h1>
+            </div>
+            <button onClick="{{ goApprovals }}" style="background:#1a1a1a;color:#fff;border:none;border-radius:9px;padding:11px 17px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;" style-hover="background:#000;">
+              Review today's batch
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+          </div>
+
+          <!-- KPI ROW -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:14px;margin-bottom:26px;">
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:17px 18px;">
+              <div style="font-size:12.5px;color:#6b6b6b;font-weight:600;margin-bottom:9px;">Revenue today</div>
+              <div style="font-size:27px;font-weight:700;color:#1a1a1a;letter-spacing:-.6px;font-variant-numeric:tabular-nums;">{{ kRevenue }}</div>
+              <div style="font-size:12px;color:#0a7a52;font-weight:600;margin-top:6px;">▲ 14% vs yesterday</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:17px 18px;">
+              <div style="font-size:12.5px;color:#6b6b6b;font-weight:600;margin-bottom:9px;">Margin today</div>
+              <div style="font-size:27px;font-weight:700;color:#0a7a52;letter-spacing:-.6px;font-variant-numeric:tabular-nums;">{{ kMargin }}</div>
+              <div style="font-size:12px;color:#6b6b6b;font-weight:600;margin-top:6px;">{{ kMarginPct }} blended margin</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:17px 18px;">
+              <div style="font-size:12.5px;color:#6b6b6b;font-weight:600;margin-bottom:9px;">Awaiting your approval</div>
+              <div style="font-size:27px;font-weight:700;color:#1a1a1a;letter-spacing:-.6px;font-variant-numeric:tabular-nums;">{{ kAwaiting }}</div>
+              <div style="font-size:12px;color:#b26b00;font-weight:600;margin-top:6px;">{{ kAwaitingSub }}</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:17px 18px;">
+              <div style="font-size:12.5px;color:#6b6b6b;font-weight:600;margin-bottom:9px;">Live listings today</div>
+              <div style="font-size:27px;font-weight:700;color:#1a1a1a;letter-spacing:-.6px;font-variant-numeric:tabular-nums;">{{ kListed }}</div>
+              <div style="font-size:12px;color:#4b53b5;font-weight:600;margin-top:6px;">auto-published by AI</div>
+            </div>
+          </div>
+
+          <!-- NEEDS ATTENTION -->
+          <h2 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 13px;letter-spacing:-.2px;">Needs your attention</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:28px;">
+
+            <div onClick="{{ goApprovals }}" style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:13px;" style-hover="border-color:#bcbcbc;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <div style="width:38px;height:38px;border-radius:10px;background:#eef0fb;color:#4b53b5;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.5" width="12" height="16.5" rx="2"/><path d="m9.4 12.6 1.9 1.9 3.4-3.9"/></svg>
+                </div>
+                <div style="flex:1;"><div style="font-size:14.5px;font-weight:700;color:#1a1a1a;">Daily order batch</div><div style="font-size:12.5px;color:#8a8a8a;">The one human checkpoint</div></div>
+                <div style="font-size:24px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ cApprovals }}</div>
+              </div>
+              <div style="font-size:13px;color:#5a5a5a;line-height:1.5;">{{ attnApprovals }}</div>
+              <div style="font-size:13px;font-weight:600;color:#4b53b5;display:flex;align-items:center;gap:5px;">Approve the batch <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+
+            <div onClick="{{ goListings }}" style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:13px;" style-hover="border-color:#bcbcbc;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <div style="width:38px;height:38px;border-radius:10px;background:#fbf1dd;color:#b26b00;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l1.8 5.1 5.3.2-4.2 3.2 1.5 5.1L12 14.4l-4.4 2.7 1.5-5.1-4.2-3.2 5.3-.2z"/></svg>
+                </div>
+                <div style="flex:1;"><div style="font-size:14.5px;font-weight:700;color:#1a1a1a;">Listing review</div><div style="font-size:12.5px;color:#8a8a8a;">Below confidence threshold</div></div>
+                <div style="font-size:24px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ cListings }}</div>
+              </div>
+              <div style="font-size:13px;color:#5a5a5a;line-height:1.5;">{{ attnListings }}</div>
+              <div style="font-size:13px;font-weight:600;color:#b26b00;display:flex;align-items:center;gap:5px;">Review drafts <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+
+            <div onClick="{{ goVendors }}" style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:13px;" style-hover="border-color:#bcbcbc;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <div style="width:38px;height:38px;border-radius:10px;background:#e7f0fd;color:#1f6feb;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.2 2.5-5.3 5.5-5.3s5.5 2.1 5.5 5.3"/><path d="M16 5.2a3 3 0 0 1 0 5.6M17.5 14.8c2.1.6 3.5 2.3 3.5 4.4"/></svg>
+                </div>
+                <div style="flex:1;"><div style="font-size:14.5px;font-weight:700;color:#1a1a1a;">Vendor requests</div><div style="font-size:12.5px;color:#8a8a8a;">Unknown Telegram senders</div></div>
+                <div style="font-size:24px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ cVendors }}</div>
+              </div>
+              <div style="font-size:13px;color:#5a5a5a;line-height:1.5;">{{ attnVendors }}</div>
+              <div style="font-size:13px;font-weight:600;color:#1f6feb;display:flex;align-items:center;gap:5px;">Approve or reject <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+          </div>
+
+          <!-- THE LOOP -->
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:20px 22px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <h2 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0;letter-spacing:-.2px;">The loop today</h2>
+              <span style="font-size:12px;color:#8a8a8a;font-weight:500;">Vendor message → AI listing → catalog → order → approval → courier</span>
+            </div>
+            <div style="display:flex;align-items:stretch;gap:0;flex-wrap:wrap;">
+              <sc-for list="{{ loopSteps }}" as="s" hint-placeholder-count="6">
+                <div style="flex:1 1 130px;min-width:120px;display:flex;flex-direction:column;gap:5px;padding:2px 4px;position:relative;">
+                  <div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:{{ s.color }};text-transform:uppercase;">{{ s.label }}</div>
+                  <div style="font-size:22px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;letter-spacing:-.5px;">{{ s.value }}</div>
+                  <div style="font-size:11.5px;color:#9a9a9a;font-weight:500;">{{ s.sub }}</div>
+                  <div style="height:3px;border-radius:2px;background:{{ s.bar }};margin-top:4px;"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- ACTIVITY -->
+          <h2 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0 0 13px;letter-spacing:-.2px;">Recent activity</h2>
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;overflow:hidden;">
+            <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid #f0f0f0;">
+                <span style="width:9px;height:9px;border-radius:50%;background:{{ a.dot }};flex:0 0 auto;"></span>
+                <span style="flex:1;font-size:13.5px;color:#2b2b2b;">{{ a.text }}</span>
+                <span style="font-size:11px;font-weight:700;color:{{ a.tagColor }};background:{{ a.tagBg }};padding:3px 9px;border-radius:6px;flex:0 0 auto;">{{ a.tag }}</span>
+                <span style="font-size:12px;color:#9a9a9a;font-variant-numeric:tabular-nums;width:46px;text-align:right;flex:0 0 auto;">{{ a.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ ORDER APPROVAL ============ -->
+        <sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:88px;">
+          <div style="margin-bottom:18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+              <h1 style="font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0;color:#1a1a1a;">Daily order approval</h1>
+              <span style="font-size:12px;font-weight:700;color:#4b53b5;background:#eef0fb;padding:4px 10px;border-radius:7px;">{{ todayShort }}</span>
+            </div>
+            <p style="margin:0;font-size:13.5px;color:#6b6b6b;max-width:680px;">One tap confirms payment in Shopify <strong>and</strong> dispatches the couriers. Matched proofs are pre-selected; flagged ones are held out for a look.</p>
+          </div>
+
+          <!-- summary strip -->
+          <div style="display:flex;gap:13px;flex-wrap:wrap;margin-bottom:16px;">
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:11px;">
+              <span style="width:32px;height:32px;border-radius:8px;background:#e7f4ee;color:#0a7a52;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg></span>
+              <div><div style="font-size:19px;font-weight:800;color:#1a1a1a;line-height:1;font-variant-numeric:tabular-nums;">{{ sMatched }}</div><div style="font-size:11.5px;color:#8a8a8a;font-weight:600;margin-top:2px;">matched proofs</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:11px;">
+              <span style="width:32px;height:32px;border-radius:8px;background:#fbf1dd;color:#b26b00;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.2"/><path d="M10.3 4.3 3 17a2 2 0 0 0 1.7 3h14.6a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg></span>
+              <div><div style="font-size:19px;font-weight:800;color:#1a1a1a;line-height:1;font-variant-numeric:tabular-nums;">{{ sFlagged }}</div><div style="font-size:11.5px;color:#8a8a8a;font-weight:600;margin-top:2px;">need a look</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:11px;">
+              <span style="width:32px;height:32px;border-radius:8px;background:#f0f0f0;color:#1a1a1a;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <div><div style="font-size:19px;font-weight:800;color:#1a1a1a;line-height:1;font-variant-numeric:tabular-nums;">{{ sBatchTotal }}</div><div style="font-size:11.5px;color:#8a8a8a;font-weight:600;margin-top:2px;">batch value</div></div>
+            </div>
+          </div>
+
+          <!-- filter tabs -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <div onClick="{{ filterAll }}" style="{{ tabAll }}" style-hover="background:#f0f0f0;">All <span style="opacity:.55;">{{ cAll }}</span></div>
+            <div onClick="{{ filterMatched }}" style="{{ tabMatched }}" style-hover="background:#f0f0f0;">Matched <span style="opacity:.55;">{{ sMatched }}</span></div>
+            <div onClick="{{ filterFlagged }}" style="{{ tabFlagged }}" style-hover="background:#f0f0f0;">Flagged <span style="opacity:.55;">{{ sFlagged }}</span></div>
+          </div>
+
+          <!-- table -->
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 18px;border-bottom:1px solid #ececec;background:#fafafa;font-size:11px;font-weight:700;letter-spacing:.4px;color:#8a8a8a;text-transform:uppercase;">
+              <div onClick="{{ toggleAll }}" style="width:19px;height:19px;border-radius:5px;border:1.8px solid {{ allCheckBorder }};background:{{ allCheckBg }};display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:{{ allCheckOpacity }};"><path d="m5 12 4.5 4.5L19 7"/></svg>
+              </div>
+              <div style="width:120px;">Order</div>
+              <div style="flex:1;min-width:150px;">Items &amp; vendors</div>
+              <div style="width:96px;">Channel</div>
+              <div style="width:88px;text-align:right;">Amount</div>
+              <div style="width:130px;">Proof</div>
+            </div>
+
+            <sc-for list="{{ orderRows }}" as="o" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #f1f1f1;cursor:pointer;background:{{ o.rowBg }};" style-hover="background:#fafbff;">
+                <div onClick="{{ o.onToggle }}" style="width:19px;height:19px;border-radius:5px;border:1.8px solid {{ o.checkBorder }};background:{{ o.checkBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:{{ o.checkOpacity }};"><path d="m5 12 4.5 4.5L19 7"/></svg>
+                </div>
+                <div onClick="{{ o.onOpen }}" style="width:120px;display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-size:13.5px;font-weight:700;color:#1a1a1a;">#{{ o.id }}</span>
+                  <span style="font-size:12px;color:#8a8a8a;">{{ o.customer }}</span>
+                </div>
+                <div onClick="{{ o.onOpen }}" style="flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-size:13px;color:#3a3a3a;">{{ o.itemSummary }}</span>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                    <sc-for list="{{ o.chips }}" as="c" hint-placeholder-count="2">
+                      <span style="display:inline-flex;align-items:center;gap:5px;background:#f4f4f5;border-radius:999px;padding:3px 9px 3px 7px;font-size:11px;font-weight:600;color:#52525b;"><span style="width:7px;height:7px;border-radius:50%;background:{{ c.dot }};"></span>{{ c.label }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+                <div onClick="{{ o.onOpen }}" style="width:96px;font-size:12.5px;color:#6b6b6b;font-weight:500;">{{ o.channel }}</div>
+                <div onClick="{{ o.onOpen }}" style="width:88px;text-align:right;font-size:14px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ o.totalFmt }}</div>
+                <div onClick="{{ o.onOpen }}" style="width:130px;"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:{{ o.badgeColor }};background:{{ o.badgeBg }};padding:4px 10px;border-radius:999px;">{{ o.badgeLabel }}</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ LISTING REVIEW ============ -->
+        <sc-if value="{{ isListings }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <div style="margin-bottom:20px;">
+            <h1 style="font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;color:#1a1a1a;">Listing review</h1>
+            <p style="margin:0;font-size:13.5px;color:#6b6b6b;max-width:680px;">AI drafts that fell below the confidence threshold. Everything above it published automatically — these need a quick check before they go live. <strong style="color:#1a1a1a;">{{ listingsSubtext }}.</strong></p>
+          </div>
+
+          <!-- filter / sort toolbar -->
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;position:relative;z-index:5;">
+            <!-- vendor filter -->
+            <div style="position:relative;">
+              <div onClick="{{ toggleVendorMenu }}" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3e3e3;border-radius:9px;padding:8px 11px;cursor:pointer;font-size:13px;" style-hover="border-color:#bcbcbc;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.2-5H5.2L4 9z"/><path d="M5 9v11h14V9"/><path d="M9.5 20v-5.5h5V20"/></svg>
+                <span style="color:#8a8a8a;font-weight:500;">Vendor</span>
+                <span style="font-weight:700;color:#1a1a1a;">{{ vendorBtnLabel }}</span>
+                <span style="background:#f0f0f1;color:#52525b;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 6px;">{{ vendorBtnCount }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <sc-if value="{{ vendorMenuOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:calc(100% + 6px);left:0;width:288px;background:#fff;border:1px solid #e3e3e3;border-radius:11px;box-shadow:0 10px 30px rgba(0,0,0,.13);z-index:6;overflow:hidden;">
+                  <div style="padding:9px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;background:#fafafa;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a0a0a0" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+                    <input onInput="{{ onVendorSearch }}" placeholder="Search vendors…" style="flex:1;border:none;background:transparent;font-family:inherit;font-size:13px;outline:none;color:#1a1a1a;" />
+                  </div>
+                  <div style="max-height:300px;overflow-y:auto;padding:6px;">
+                    <div onClick="{{ pickAllVendors }}" style="{{ allRowStyle }}" style-hover="background:#f6f6f6;">
+                      <span style="width:8px;height:8px;border-radius:2px;background:#9a9a9a;"></span>
+                      <span style="flex:1;">All vendors</span>
+                      <span style="font-size:11.5px;font-weight:700;color:#8a8a8a;font-variant-numeric:tabular-nums;">{{ totalListings }}</span>
+                    </div>
+                    <sc-for list="{{ vendorMenuItems }}" as="v" hint-placeholder-count="6">
+                      <div onClick="{{ v.onPick }}" style="{{ v.rowStyle }}" style-hover="background:#f6f6f6;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:{{ v.dot }};flex:0 0 auto;"></span>
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ v.name }}</span>
+                        <span style="font-size:11.5px;font-weight:700;color:#8a8a8a;font-variant-numeric:tabular-nums;">{{ v.count }}</span>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ vendorMenuNoResults }}" hint-placeholder-val="{{ false }}">
+                      <div style="padding:14px 9px;text-align:center;font-size:12.5px;color:#9a9a9a;">No vendors match.</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- sort -->
+            <div style="position:relative;">
+              <div onClick="{{ toggleSortMenu }}" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e3e3e3;border-radius:9px;padding:8px 11px;cursor:pointer;font-size:13px;" style-hover="border-color:#bcbcbc;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13M4 12h9M4 17h5"/><path d="m17 14 3 3 3-3"/><path d="M20 17V8"/></svg>
+                <span style="color:#8a8a8a;font-weight:500;">Sort</span>
+                <span style="font-weight:700;color:#1a1a1a;">{{ sortBtnLabel }}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+              <sc-if value="{{ sortMenuOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:calc(100% + 6px);left:0;width:236px;background:#fff;border:1px solid #e3e3e3;border-radius:11px;box-shadow:0 10px 30px rgba(0,0,0,.13);z-index:6;padding:6px;">
+                  <sc-for list="{{ sortOptions }}" as="o" hint-placeholder-count="3">
+                    <div onClick="{{ o.onPick }}" style="{{ o.rowStyle }}" style-hover="background:#f6f6f6;">{{ o.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="flex:1;"></div>
+
+            <span style="font-size:12.5px;color:#8a8a8a;font-weight:600;">Showing <strong style="color:#1a1a1a;">{{ shownListings }}</strong> of {{ totalListings }} drafts</span>
+            <sc-if value="{{ isListingFiltered }}" hint-placeholder-val="{{ false }}">
+              <div onClick="{{ clearVendor }}" style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#4b53b5;cursor:pointer;padding:6px 9px;border-radius:8px;" style-hover="background:#eef0fb;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                Clear
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- click-away scrim for the menus -->
+          <sc-if value="{{ anyListMenuOpen }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ closeListMenus }}" style="position:fixed;inset:0;z-index:4;"></div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <sc-for list="{{ listingRows }}" as="l" hint-placeholder-count="4">
+              <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:18px;display:flex;gap:18px;flex-wrap:wrap;">
+                <!-- photos -->
+                <div style="display:flex;gap:8px;flex:0 0 auto;">
+                  <div style="width:96px;height:120px;border-radius:9px;background:#ededed;display:flex;align-items:center;justify-content:center;position:relative;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#b5b5b5" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 16-5-5L5 20"/></svg>
+                    <span style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.62);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:5px;">{{ l.photoCount }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="width:56px;height:56px;border-radius:8px;background:#ededed;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b5b5b5" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m21 16-5-5L5 20"/></svg></div>
+                    <div style="width:56px;height:56px;border-radius:8px;background:#ededed;display:flex;align-items:center;justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b5b5b5" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m21 16-5-5L5 20"/></svg></div>
+                  </div>
+                </div>
+
+                <!-- content -->
+                <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:9px;">
+                  <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#52525b;"><span style="width:8px;height:8px;border-radius:50%;background:{{ l.vendorDot }};"></span>{{ l.vendor }}</span>
+                    <span style="font-size:11px;color:#c0c0c0;">•</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#4b53b5;background:#eef0fb;padding:3px 9px;border-radius:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.4L19 9l-5.1 1.6L12 16l-1.9-5.4L5 9l5.1-1.6z"/></svg>AI draft</span>
+                  </div>
+                  <h3 style="margin:0;font-size:16.5px;font-weight:700;color:#1a1a1a;letter-spacing:-.2px;">{{ l.title }}</h3>
+                  <p style="margin:0;font-size:13px;color:#6b6b6b;line-height:1.5;">{{ l.desc }}</p>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:1px;">
+                    <sc-for list="{{ l.attrs }}" as="t" hint-placeholder-count="2">
+                      <span style="font-size:11.5px;font-weight:600;color:#52525b;background:#f3f3f4;border:1px solid #e8e8e8;padding:3px 9px;border-radius:6px;">{{ t }}</span>
+                    </sc-for>
+                  </div>
+                  <!-- confidence + flag -->
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
+                    <span style="font-size:11.5px;font-weight:700;color:#8a8a8a;">Confidence</span>
+                    <div style="flex:0 0 130px;height:7px;border-radius:5px;background:#eee;overflow:hidden;"><div style="width:{{ l.confW }};height:100%;background:{{ l.confColor }};border-radius:5px;"></div></div>
+                    <span style="font-size:12.5px;font-weight:800;color:{{ l.confColor }};font-variant-numeric:tabular-nums;">{{ l.confPct }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:{{ l.flagColor }};background:{{ l.flagBg }};padding:7px 11px;border-radius:8px;margin-top:2px;font-weight:500;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.2"/></svg>
+                    {{ l.flag }}
+                  </div>
+                </div>
+
+                <!-- pricing + actions -->
+                <div style="flex:0 0 196px;display:flex;flex-direction:column;gap:11px;border-left:1px solid #f0f0f0;padding-left:18px;">
+                  <div style="background:#fafafa;border:1px solid #eee;border-radius:9px;padding:12px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#8a8a8a;margin-bottom:6px;"><span>Vendor cost</span><span style="font-weight:700;color:#3a3a3a;font-variant-numeric:tabular-nums;">{{ l.costFmt }}</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#8a8a8a;margin-bottom:6px;"><span>Margin rule</span><span style="font-weight:600;color:#4b53b5;font-size:11px;">{{ l.rule }}</span></div>
+                    <div style="height:1px;background:#ececec;margin:8px 0;"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:12px;color:#6b6b6b;font-weight:600;">Sell price</span><span style="font-size:18px;font-weight:800;color:{{ l.sellColor }};font-variant-numeric:tabular-nums;">{{ l.sellFmt }}</span></div>
+                    <div style="font-size:11px;color:#0a7a52;font-weight:600;text-align:right;margin-top:2px;">{{ l.marginFmt }}</div>
+                  </div>
+                  <button onClick="{{ l.onPublish }}" style="{{ l.publishStyle }}" style-hover="filter:brightness(.94);">{{ l.publishLabel }}</button>
+                  <div style="display:flex;gap:8px;">
+                    <button style="flex:1;background:#fff;color:#3a3a3a;border:1px solid #d6d6d6;border-radius:8px;padding:8px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:#f6f6f6;">Edit</button>
+                    <button onClick="{{ l.onReject }}" style="flex:1;background:#fff;color:#b3261e;border:1px solid #f0d4d1;border-radius:8px;padding:8px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:#fdf2f1;">Reject</button>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ listingsFilteredEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px dashed #d8d8d8;border-radius:12px;padding:40px;text-align:center;color:#8a8a8a;">
+                <div style="font-size:14.5px;font-weight:700;color:#1a1a1a;margin-bottom:5px;">No drafts for {{ vendorBtnLabel }}</div>
+                <div style="font-size:13px;margin-bottom:14px;">This vendor has no drafts in the review queue right now.</div>
+                <div onClick="{{ clearVendor }}" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:#1a1a1a;border-radius:8px;padding:9px 15px;cursor:pointer;" style-hover="background:#000;">Show all vendors</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ listingsAllEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px dashed #d8d8d8;border-radius:12px;padding:48px;text-align:center;color:#8a8a8a;">
+                <div style="font-size:15px;font-weight:700;color:#0a7a52;margin-bottom:5px;">Review queue clear ✓</div>
+                <div style="font-size:13px;">Every draft has been handled. New low-confidence listings will appear here.</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ VENDORS ============ -->
+        <sc-if value="{{ isVendors }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <div style="margin-bottom:20px;">
+            <h1 style="font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;color:#1a1a1a;">Vendors</h1>
+            <p style="margin:0;font-size:13.5px;color:#6b6b6b;max-width:680px;">Unknown Telegram senders wait here until you register them — nothing they send reaches the live catalog first.</p>
+          </div>
+
+          <h2 style="font-size:13px;font-weight:700;color:#1a1a1a;margin:0 0 12px;letter-spacing:.2px;display:flex;align-items:center;gap:8px;">Vendor requests <span style="font-size:11px;font-weight:700;color:#b26b00;background:#fbf1dd;padding:2px 8px;border-radius:6px;">{{ cVendors }}</span></h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:30px;">
+            <sc-for list="{{ vendorReqs }}" as="v" hint-placeholder-count="2">
+              <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:17px;display:flex;flex-direction:column;gap:13px;">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <div style="width:42px;height:42px;border-radius:50%;background:{{ v.avBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex:0 0 auto;">{{ v.avInitial }}</div>
+                  <div style="flex:1;"><div style="font-size:14.5px;font-weight:700;color:#1a1a1a;">{{ v.name }}</div><div style="font-size:12px;color:#8a8a8a;">{{ v.handle }} · {{ v.channel }}</div></div>
+                  <span style="font-size:11.5px;color:#9a9a9a;font-weight:500;">{{ v.time }}</span>
+                </div>
+                <div style="display:flex;gap:7px;align-items:center;background:#fafafa;border:1px solid #f0f0f0;border-radius:9px;padding:10px 12px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 16-5-5L5 20"/></svg>
+                  <span style="font-size:12.5px;color:#6b6b6b;">{{ v.photos }} photos · "{{ v.caption }}"</span>
+                </div>
+                <div style="display:flex;gap:9px;">
+                  <button onClick="{{ v.onApprove }}" style="flex:1;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;" style-hover="background:#000;">Register vendor</button>
+                  <button onClick="{{ v.onReject }}" style="flex:0 0 auto;background:#fff;color:#b3261e;border:1px solid #f0d4d1;border-radius:8px;padding:10px 15px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;" style-hover="background:#fdf2f1;">Reject</button>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ vendorReqsEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px dashed #d8d8d8;border-radius:12px;padding:34px;text-align:center;color:#8a8a8a;font-size:13px;">No pending vendor requests. New senders will appear here.</div>
+            </sc-if>
+          </div>
+
+          <h2 style="font-size:13px;font-weight:700;color:#1a1a1a;margin:0 0 12px;letter-spacing:.2px;">Active vendors</h2>
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:14px;padding:11px 18px;border-bottom:1px solid #ececec;background:#fafafa;font-size:11px;font-weight:700;letter-spacing:.4px;color:#8a8a8a;text-transform:uppercase;">
+              <div style="flex:1;min-width:150px;">Vendor</div>
+              <div style="width:150px;">Reliability</div>
+              <div style="width:80px;">Lead time</div>
+              <div style="width:80px;text-align:right;">Live</div>
+              <div style="width:104px;text-align:right;">Payout due</div>
+            </div>
+            <sc-for list="{{ vendorRows }}" as="v" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #f1f1f1;" style-hover="background:#fafafa;">
+                <div style="flex:1;min-width:150px;display:flex;align-items:center;gap:11px;">
+                  <span style="width:30px;height:30px;border-radius:8px;background:{{ v.dot }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 auto;">{{ v.initial }}</span>
+                  <div><div style="font-size:13.5px;font-weight:600;color:#1a1a1a;">{{ v.name }}</div><div style="font-size:11.5px;color:#9a9a9a;">Location · {{ v.location }}</div></div>
+                </div>
+                <div style="width:150px;display:flex;align-items:center;gap:9px;">
+                  <div style="flex:1;height:6px;border-radius:4px;background:#eee;overflow:hidden;"><div style="width:{{ v.relW }};height:100%;background:{{ v.relColor }};border-radius:4px;"></div></div>
+                  <span style="font-size:12.5px;font-weight:700;color:{{ v.relColor }};font-variant-numeric:tabular-nums;width:34px;">{{ v.rel }}</span>
+                </div>
+                <div style="width:80px;font-size:13px;color:#6b6b6b;">{{ v.lead }}</div>
+                <div style="width:80px;text-align:right;font-size:13.5px;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ v.products }}</div>
+                <div style="width:104px;text-align:right;font-size:13.5px;font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ v.payout }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ CATALOG ============ -->
+        <sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;color:#1a1a1a;">Today's Drop</h1>
+              <p style="margin:0;font-size:13.5px;color:#6b6b6b;">{{ catalogCount }} new arrivals · {{ todayShort }}. Each item links to its Shopify product page.</p>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;">
+            <!-- product grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px;">
+              <sc-for list="{{ catalogRows }}" as="p" hint-placeholder-count="8">
+                <div style="background:#fff;border:1px solid #e3e3e3;border-radius:11px;overflow:hidden;" style-hover="border-color:#bcbcbc;box-shadow:0 2px 10px rgba(0,0,0,.05);">
+                  <div style="aspect-ratio:1/1;background:#ededed;display:flex;align-items:center;justify-content:center;position:relative;">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#bcbcbc" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 16-5-5L5 20"/></svg>
+                    <span style="position:absolute;top:8px;left:8px;display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.92);font-size:10px;font-weight:700;color:#52525b;padding:3px 7px;border-radius:6px;"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.dot }};"></span>{{ p.vendor }}</span>
+                  </div>
+                  <div style="padding:11px 12px;">
+                    <div style="font-size:13px;font-weight:600;color:#1a1a1a;line-height:1.3;margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ p.title }}</div>
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:14px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ p.price }}</span><span style="font-size:11px;color:#0a7a52;font-weight:600;">+{{ p.margin }}</span></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- broadcast panel -->
+            <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:18px;position:sticky;top:0;">
+              <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:3px;">Broadcast catalog</div>
+              <div style="font-size:12px;color:#8a8a8a;margin-bottom:15px;">Send today's drop everywhere your customers are.</div>
+              <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px;">
+                <sc-for list="{{ channelRows }}" as="ch" hint-placeholder-count="5">
+                  <div onClick="{{ ch.onToggle }}" style="display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid {{ ch.border }};background:{{ ch.bg }};border-radius:9px;cursor:pointer;">
+                    <span style="width:30px;height:30px;border-radius:7px;background:{{ ch.iconBg }};color:{{ ch.iconColor }};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:0 0 auto;">{{ ch.glyph }}</span>
+                    <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#1a1a1a;">{{ ch.name }}</div><div style="font-size:11px;color:#9a9a9a;">{{ ch.reach }}</div></div>
+                    <div style="width:34px;height:20px;border-radius:999px;background:{{ ch.switchBg }};position:relative;flex:0 0 auto;transition:background .15s;"><span style="position:absolute;top:2px;left:{{ ch.knobLeft }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s;"></span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ onBroadcast }}" style="width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:9px;padding:12px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" style-hover="background:#000;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5v3.2l11.5 4.3V6.2L4 10.5z"/><path d="M15.5 8.2 20 6.3v11.4l-4.5-1.9"/></svg>
+                {{ broadcastLabel }}
+              </button>
+              <sc-if value="{{ broadcasted }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid #f0f0f0;">
+                  <div style="font-size:11.5px;font-weight:700;color:#0a7a52;margin-bottom:9px;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg>Last run · {{ lastRunTime }}</div>
+                  <sc-for list="{{ broadcastStats }}" as="b" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;"><span style="color:#6b6b6b;">{{ b.name }}</span><span style="font-weight:700;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ b.sent }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- ============ ANALYTICS ============ -->
+        <sc-if value="{{ isAnalytics }}" hint-placeholder-val="{{ true }}">
+        <div style="">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+            <div>
+              <h1 style="font-size:24px;font-weight:700;letter-spacing:-.5px;margin:0 0 4px;color:#1a1a1a;">Analytics</h1>
+              <p style="margin:0;font-size:13.5px;color:#6b6b6b;">Sales, margin and per-vendor performance — settled from prepaid orders.</p>
+            </div>
+            <div style="display:flex;gap:2px;background:#fff;border:1px solid #e3e3e3;border-radius:9px;padding:3px;">
+              <span style="font-size:12.5px;font-weight:600;color:#8a8a8a;padding:6px 12px;">7 days</span>
+              <span style="font-size:12.5px;font-weight:600;color:#fff;background:#1a1a1a;border-radius:6px;padding:6px 12px;">30 days</span>
+              <span style="font-size:12.5px;font-weight:600;color:#8a8a8a;padding:6px 12px;">90 days</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:13px;margin-bottom:20px;">
+            <sc-for list="{{ anKpis }}" as="k" hint-placeholder-count="5">
+              <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:16px 17px;">
+                <div style="font-size:12px;color:#6b6b6b;font-weight:600;margin-bottom:8px;">{{ k.label }}</div>
+                <div style="font-size:23px;font-weight:800;color:{{ k.color }};letter-spacing:-.5px;font-variant-numeric:tabular-nums;">{{ k.value }}</div>
+                <div style="font-size:11.5px;color:#8a8a8a;font-weight:600;margin-top:5px;">{{ k.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:20px 22px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <h2 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0;">Revenue &amp; margin</h2>
+              <div style="display:flex;gap:16px;font-size:12px;font-weight:600;color:#8a8a8a;">
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:#d7ece2;"></span>Revenue</span>
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:3px;background:#0c8a5f;"></span>Margin</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:14px;height:190px;padding-bottom:24px;position:relative;">
+              <sc-for list="{{ chartBars }}" as="b" hint-placeholder-count="7">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0;position:relative;">
+                  <span style="font-size:10.5px;font-weight:700;color:#6b6b6b;margin-bottom:5px;font-variant-numeric:tabular-nums;">{{ b.revFmt }}</span>
+                  <div style="width:100%;max-width:44px;height:{{ b.revH }};background:#d7ece2;border-radius:6px 6px 0 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;">
+                    <div style="width:100%;height:{{ b.marH }};background:#0c8a5f;"></div>
+                  </div>
+                  <span style="position:absolute;bottom:-22px;font-size:11px;color:#9a9a9a;font-weight:600;">{{ b.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:#fff;border:1px solid #e3e3e3;border-radius:12px;overflow:hidden;">
+            <div style="padding:15px 18px 13px;border-bottom:1px solid #ececec;"><h2 style="font-size:14px;font-weight:700;color:#1a1a1a;margin:0;">Per-vendor performance</h2></div>
+            <div style="display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid #ececec;background:#fafafa;font-size:11px;font-weight:700;letter-spacing:.4px;color:#8a8a8a;text-transform:uppercase;">
+              <div style="flex:1;min-width:130px;">Vendor</div>
+              <div style="width:60px;text-align:right;">Units</div>
+              <div style="width:90px;text-align:right;">Revenue</div>
+              <div style="width:90px;text-align:right;">Payout</div>
+              <div style="width:170px;">Margin</div>
+            </div>
+            <sc-for list="{{ vendorPerf }}" as="v" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:13px 18px;border-bottom:1px solid #f1f1f1;" style-hover="background:#fafafa;">
+                <div style="flex:1;min-width:130px;display:flex;align-items:center;gap:10px;">
+                  <span style="width:9px;height:9px;border-radius:50%;background:{{ v.dot }};flex:0 0 auto;"></span>
+                  <span style="font-size:13.5px;font-weight:600;color:#1a1a1a;">{{ v.name }}</span>
+                </div>
+                <div style="width:60px;text-align:right;font-size:13px;color:#6b6b6b;font-variant-numeric:tabular-nums;">{{ v.units }}</div>
+                <div style="width:90px;text-align:right;font-size:13.5px;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ v.revenue }}</div>
+                <div style="width:90px;text-align:right;font-size:13px;color:#8a8a8a;font-variant-numeric:tabular-nums;">{{ v.payout }}</div>
+                <div style="width:170px;display:flex;align-items:center;gap:9px;">
+                  <div style="flex:1;height:6px;border-radius:4px;background:#eee;overflow:hidden;"><div style="width:{{ v.marW }};height:100%;background:#0c8a5f;border-radius:4px;"></div></div>
+                  <span style="font-size:12.5px;font-weight:700;color:#0a7a52;font-variant-numeric:tabular-nums;width:38px;">{{ v.marPct }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+
+      <!-- STICKY APPROVE BAR (approvals only) -->
+      <sc-if value="{{ showApproveBar }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid #e3e3e3;padding:13px 34px;display:flex;align-items:center;gap:16px;">
+          <div style="display:flex;flex-direction:column;">
+            <span style="font-size:14px;font-weight:700;color:#1a1a1a;">{{ selCount }} orders selected</span>
+            <span style="font-size:12px;color:#8a8a8a;">Confirms payment in Shopify &amp; dispatches couriers</span>
+          </div>
+          <div style="flex:1;"></div>
+          <span style="font-size:13px;color:#6b6b6b;">Batch value <strong style="color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ selTotal }}</strong></span>
+          <button onClick="{{ approveBatch }}" style="background:#0c8a5f;color:#fff;border:none;border-radius:9px;padding:12px 22px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:9px;" style-hover="background:#0a7850;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg>
+            {{ approveLabel }}
+          </button>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <!-- ORDER DETAIL DRAWER -->
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(20,20,20,.32);z-index:50;"></div>
+    <aside style="position:fixed;top:0;right:0;bottom:0;width:472px;max-width:94vw;background:#fff;z-index:51;box-shadow:-8px 0 40px rgba(0,0,0,.16);display:flex;flex-direction:column;">
+      <div style="flex:0 0 auto;padding:18px 22px;border-bottom:1px solid #ececec;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;"><div style="font-size:18px;font-weight:700;color:#1a1a1a;">Order #{{ dr.id }}</div><div style="font-size:12.5px;color:#8a8a8a;">{{ dr.customer }} · {{ dr.channel }}</div></div>
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:{{ dr.badgeColor }};background:{{ dr.badgeBg }};padding:5px 11px;border-radius:999px;">{{ dr.badgeLabel }}</span>
+        <button onClick="{{ closeDrawer }}" style="width:32px;height:32px;border-radius:8px;border:none;background:#f2f2f2;color:#6b6b6b;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;" style-hover="background:#e6e6e6;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;padding:20px 22px;">
+        <!-- delivery -->
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" stroke-width="1.7" style="margin-top:2px;flex:0 0 auto;"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <div><div style="font-size:13px;font-weight:600;color:#2b2b2b;">{{ dr.address }}</div><div style="font-size:12px;color:#9a9a9a;margin-top:2px;">Courier consolidates from {{ dr.vendorCount }} vendor pickups</div></div>
+        </div>
+
+        <!-- items by vendor -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:#8a8a8a;text-transform:uppercase;margin-bottom:10px;">Items by vendor pickup</div>
+        <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:20px;">
+          <sc-for list="{{ dr.groups }}" as="g" hint-placeholder-count="2">
+            <div style="border:1px solid #ececec;border-radius:10px;overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:8px;padding:9px 13px;background:#fafafa;border-bottom:1px solid #f0f0f0;">
+                <span style="width:8px;height:8px;border-radius:50%;background:{{ g.dot }};"></span>
+                <span style="font-size:12.5px;font-weight:700;color:#1a1a1a;">{{ g.vendor }}</span>
+                <span style="font-size:11px;color:#9a9a9a;">· {{ g.lead }}</span>
+              </div>
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="1">
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 13px;">
+                  <div style="width:38px;height:38px;border-radius:7px;background:#ededed;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b5b5b5" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m21 16-5-5L5 20"/></svg></div>
+                  <span style="flex:1;font-size:13px;color:#2b2b2b;">{{ it.name }}</span>
+                  <span style="font-size:13px;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ it.price }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- total -->
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-top:1px solid #ececec;border-bottom:1px solid #ececec;margin-bottom:20px;">
+          <span style="font-size:13px;font-weight:600;color:#6b6b6b;">Order total</span>
+          <span style="font-size:20px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums;">{{ dr.totalFmt }}</span>
+        </div>
+
+        <!-- payment proof -->
+        <div style="font-size:11px;font-weight:700;letter-spacing:.4px;color:#8a8a8a;text-transform:uppercase;margin-bottom:10px;">Payment proof</div>
+        <div style="display:flex;gap:13px;margin-bottom:14px;">
+          <div style="width:108px;height:150px;border-radius:10px;background:#f3f3f3;border:1px solid #e8e8e8;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;color:#a8a8a8;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 16-5-5L5 20"/></svg>
+            <span style="font-size:10px;font-weight:600;">transfer.jpg</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#4b53b5;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.4L19 9l-5.1 1.6L12 16l-1.9-5.4L5 9l5.1-1.6z"/></svg>AI read the screenshot</div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;"><span style="color:#8a8a8a;">Amount found</span><span style="font-weight:700;color:{{ dr.amtColor }};font-variant-numeric:tabular-nums;">{{ dr.proofAmt }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;"><span style="color:#8a8a8a;">Reference</span><span style="font-weight:600;color:#3a3a3a;">{{ dr.proofRef }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;"><span style="color:#8a8a8a;">Payer name</span><span style="font-weight:600;color:#3a3a3a;">{{ dr.payer }}</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:{{ dr.noteColor }};background:{{ dr.noteBg }};padding:11px 13px;border-radius:9px;line-height:1.45;font-weight:500;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px;flex:0 0 auto;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.2"/></svg>
+          <span>{{ dr.note }}</span>
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:16px 22px;border-top:1px solid #ececec;display:flex;gap:10px;">
+        <button onClick="{{ dr.onRequest }}" style="flex:0 0 auto;background:#fff;color:#3a3a3a;border:1px solid #d6d6d6;border-radius:9px;padding:12px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;" style-hover="background:#f6f6f6;">Request new proof</button>
+        <button onClick="{{ dr.onApprove }}" style="flex:1;background:{{ dr.approveBg }};color:#fff;border:none;border-radius:9px;padding:12px;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;" style-hover="filter:brightness(.94);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg>
+          {{ dr.approveLabel }}
+        </button>
+      </div>
+    </aside>
+  </sc-if>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toastShown }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:13px 20px;border-radius:11px;font-size:13.5px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);z-index:80;display:flex;align-items:center;gap:11px;max-width:90vw;">
+      <span style="width:22px;height:22px;border-radius:50%;background:#0c8a5f;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg></span>
+      {{ toastMsg }}
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;managerName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Bilal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;£&quot;,&quot;options&quot;:[&quot;£&quot;,&quot;$&quot;,&quot;€&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;autoApproveClean&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = this._init();
+
+  _init() {
+    const vendors = {
+      camden:     { name: 'Camden Threads',     short: 'CT', dot: '#4b53b5', location: 'NW1 London' },
+      eastside:   { name: 'Eastside Kicks',     short: 'EK', dot: '#1f6feb', location: 'E2 London' },
+      lola:       { name: "Lola's Vintage",     short: 'LV', dot: '#c0457e', location: 'N1 London' },
+      brick:      { name: 'Brick Lane Bags',    short: 'BB', dot: '#b26b00', location: 'E1 London' },
+      northern:   { name: 'Northern Denim',     short: 'ND', dot: '#0f7a6c', location: 'M1 Manchester' },
+      soho:       { name: 'Soho Streetwear',    short: 'SS', dot: '#7c3aed', location: 'W1 London' },
+      dalston:    { name: 'Dalston Knits',      short: 'DK', dot: '#0891b2', location: 'E8 London' },
+      peckham:    { name: 'Peckham Trainers',   short: 'PT', dot: '#be123c', location: 'SE15 London' },
+      hackney:    { name: 'Hackney Outerwear',  short: 'HO', dot: '#15803d', location: 'E9 London' },
+      notting:    { name: 'Notting Hill Bags',  short: 'NB', dot: '#a16207', location: 'W11 London' },
+      shoreditch: { name: 'Shoreditch Tees',    short: 'ST', dot: '#4338ca', location: 'EC2 London' },
+      brixton:    { name: 'Brixton Denim',      short: 'BX', dot: '#db2777', location: 'SW9 London' },
+    };
+    // Registry holds ~30 vendors; these are the ones with drafts in the queue today.
+
+    const orders = [
+      { id: 1042, customer: 'Priya Shah',   channel: 'Telegram',  match: 'MATCHED',
+        items: [ { name: 'Ribbed knit jumper — Cream', vendor: 'camden', price: 48 }, { name: 'Pleated midi skirt — Black', vendor: 'lola', price: 80 } ],
+        total: 128, proofAmount: 128, proofRef: 'FT-88412', payer: 'P SHAH',
+        address: '14 Mornington Cres, London NW1 7RB' },
+      { id: 1043, customer: 'Tom Bryant',   channel: 'WhatsApp',  match: 'MATCHED',
+        items: [ { name: 'Nike Air Max 90 — White/Grey, UK9', vendor: 'eastside', price: 95 } ],
+        total: 95, proofAmount: 95, proofRef: 'REV-22910', payer: 'THOMAS BRYANT',
+        address: '6 Lavender Hill, London SW11 5RW' },
+      { id: 1044, customer: 'Aisha Kamara', channel: 'Instagram', match: 'MATCHED',
+        items: [ { name: 'Leather crossbody bag — Tan', vendor: 'brick', price: 72 }, { name: 'Mini bucket bag — Black', vendor: 'brick', price: 66 }, { name: 'Cotton oversized shirt — Stone', vendor: 'camden', price: 72 } ],
+        total: 210, proofAmount: 210, proofRef: 'FT-77301', payer: 'A KAMARA',
+        address: '88 Peckham Rye, London SE15 4ST' },
+      { id: 1045, customer: 'Daniel Owusu', channel: 'Telegram',  match: 'MISMATCH',
+        items: [ { name: 'Selvedge straight jeans — Indigo, W32', vendor: 'northern', price: 72 } ],
+        total: 72, proofAmount: 62, proofRef: 'FT-90155', payer: 'D OWUSU',
+        address: '21 Deansgate, Manchester M3 2BW' },
+      { id: 1046, customer: 'Grace Miller', channel: 'WhatsApp',  match: 'DUPLICATE',
+        items: [ { name: 'Floral wrap dress — Green', vendor: 'lola', price: 90 }, { name: 'Suede court shoes — Tan, UK6', vendor: 'eastside', price: 66 } ],
+        total: 156, proofAmount: 156, proofRef: 'FT-88412', payer: 'P SHAH',
+        address: '3 Otley Road, Leeds LS6 3AA' },
+      { id: 1047, customer: 'Leon Ferreira', channel: 'Telegram', match: 'MATCHED',
+        items: [ { name: 'Graphic tee — Washed black, M', vendor: 'camden', price: 45 } ],
+        total: 45, proofAmount: 45, proofRef: 'REV-30188', payer: 'L FERREIRA',
+        address: '52 Gloucester Rd, Bristol BS7 8BH' },
+      { id: 1048, customer: 'Hannah West',  channel: 'Telegram',  match: 'MATCHED',
+        items: [ { name: 'Carpenter trousers — Ecru, W30', vendor: 'northern', price: 78 }, { name: 'Quilted weekender — Olive', vendor: 'brick', price: 106 } ],
+        total: 184, proofAmount: 184, proofRef: 'FT-66020', payer: 'H WEST',
+        address: '9 Cowley Road, Oxford OX4 1HP' },
+    ];
+
+    const selected = {};
+    orders.forEach(o => { selected[o.id] = (o.match === 'MATCHED'); });
+
+    const listings = [
+      { id: 'L1', vendor: 'northern', title: "Vintage Levi's 501 denim jacket",
+        desc: 'Classic trucker-cut denim jacket in mid-wash indigo, button front, chest pockets. Light honeycomb fading at the elbows.',
+        attrs: ['Size M', 'Mid indigo', 'Outerwear'], conf: 62, cost: 28, rule: 'Vendor +60%', sell: 45,
+        flag: 'Size tag photo is blurry — confirm this is a Medium before publishing.', photos: '4 photos', blocked: false },
+      { id: 'L2', vendor: 'brick', title: 'Leather crossbody bag — tan',
+        desc: 'Full-grain tan leather crossbody with adjustable strap and gold-tone hardware. Two internal compartments.',
+        attrs: ['Tan', 'One size', 'Bags'], conf: 71, cost: 18, rule: 'Global +100%', sell: 36,
+        flag: 'Brand not detected in photos — listing will publish as unbranded.', photos: '3 photos', blocked: false },
+      { id: 'L3', vendor: 'eastside', title: 'Nike Air Max 90 — white / grey',
+        desc: 'Air Max 90 in white and neutral grey. Box included. Photos show what looks like more than one size.',
+        attrs: ['UK 8 / UK 9?', 'White/Grey', 'Footwear'], conf: 58, cost: 55, rule: 'Vendor +73%', sell: 95,
+        flag: 'Multiple sizes detected across photos — split into variants or pick one size.', photos: '5 photos', blocked: false },
+      { id: 'L4', vendor: 'lola', title: 'Floral midi dress',
+        desc: 'Vintage floral midi with tie waist and short sleeves. No price or cost was included in the vendor caption.',
+        attrs: ['Size 10', 'Floral', 'Dresses'], conf: 49, cost: null, rule: 'Vendor +120%', sell: null,
+        flag: 'No cost in the message — add a vendor cost before this can be priced and published.', photos: '2 photos', blocked: true },
+      { id: 'L5', vendor: 'camden', title: 'Ribbed knit jumper — cream',
+        desc: 'Soft ribbed lambswool-blend jumper, crew neck, relaxed fit. Photographed under warm indoor light.',
+        attrs: ['Size L', 'Cream', 'Knitwear'], conf: 66, cost: 24, rule: 'Vendor +100%', sell: 48,
+        flag: 'Colour may read warmer than reality — confirm “cream” vs “oatmeal”.', photos: '4 photos', blocked: false },
+      { id: 'L6', vendor: 'soho', title: 'Oversized hoodie — washed black',
+        desc: 'Heavyweight oversized hoodie, dropped shoulders, kangaroo pocket. Washed-black finish.',
+        attrs: ['Size unclear', 'Washed black', 'Tops'], conf: 68, cost: 22, rule: 'Global +100%', sell: 44,
+        flag: 'No size visible on the label — set a size before publishing.', photos: '3 photos', blocked: false },
+      { id: 'L7', vendor: 'peckham', title: 'Air Jordan 1 Mid — black / red',
+        desc: 'Jordan 1 Mid in black and varsity red. Box and a spare lace set included.',
+        attrs: ['UK 9', 'Black/Red', 'Footwear'], conf: 54, cost: 60, rule: 'Vendor +58%', sell: 95,
+        flag: 'Authenticity not auto-verified — check stitching and box label.', photos: '6 photos', blocked: false },
+      { id: 'L8', vendor: 'dalston', title: 'Lambswool cardigan — oatmeal',
+        desc: 'Button-through lambswool cardigan, ribbed trims, two front pockets.',
+        attrs: ['Size M', 'Oatmeal', 'Knitwear'], conf: 73, cost: 26, rule: 'Vendor +90%', sell: 49,
+        flag: 'Slight pilling visible on one sleeve — note condition as “good”.', photos: '4 photos', blocked: false },
+      { id: 'L9', vendor: 'hackney', title: 'Quilted liner jacket — olive',
+        desc: 'Lightweight quilted liner jacket with snap front and corduroy collar.',
+        attrs: ['No size tag', 'Olive', 'Outerwear'], conf: 64, cost: 38, rule: 'Global +100%', sell: 76,
+        flag: 'No size tag detected — measure pit-to-pit and set a size.', photos: '3 photos', blocked: false },
+      { id: 'L10', vendor: 'notting', title: 'Straw tote bag — natural',
+        desc: 'Woven straw tote with leather handles, roomy unlined interior.',
+        attrs: ['One size', 'Natural', 'Bags'], conf: 70, cost: 14, rule: 'Global +110%', sell: 30,
+        flag: 'Minor handle wear in close-ups — confirm condition grade.', photos: '2 photos', blocked: false },
+      { id: 'L11', vendor: 'shoreditch', title: 'Graphic band tee — vintage print',
+        desc: 'Single-stitch graphic tee with faded tour print on the back.',
+        attrs: ['Size M', 'Black', 'Tops'], conf: 59, cost: 9, rule: 'Vendor +200%', sell: 27,
+        flag: 'Print may be licensed band artwork — confirm resale is allowed.', photos: '3 photos', blocked: false },
+      { id: 'L12', vendor: 'brixton', title: 'Black skinny jeans — W30',
+        desc: 'Mid-rise skinny jeans in washed black with slight stretch.',
+        attrs: ['W30 L32', 'Washed black', 'Denim'], conf: 67, cost: 20, rule: 'Vendor +90%', sell: 38,
+        flag: 'Wash looks inconsistent across photos — pick the truest image as primary.', photos: '4 photos', blocked: false },
+      { id: 'L13', vendor: 'eastside', title: 'Suede court shoes — tan, UK6',
+        desc: 'Low suede court shoes in tan with stacked heel. Lightly worn soles.',
+        attrs: ['UK 6', 'Tan', 'Footwear'], conf: 61, cost: 38, rule: 'Vendor +73%', sell: 66,
+        flag: 'Small scuff on the left toe — disclose in the condition note.', photos: '4 photos', blocked: false },
+      { id: 'L14', vendor: 'lola', title: 'Silk slip dress — champagne',
+        desc: 'Bias-cut silk slip dress with adjustable straps. No cost included in the caption.',
+        attrs: ['Size 8', 'Champagne', 'Dresses'], conf: 52, cost: null, rule: 'Vendor +130%', sell: null,
+        flag: 'No cost in the message — add a vendor cost before this can be priced.', photos: '2 photos', blocked: true },
+    ];
+
+    const vendorReqs = [
+      { id: 'R1', name: 'Maya R', handle: '@maya_r_ldn', channel: 'Telegram', time: '12 min ago', photos: 4, caption: 'New in — silk scarves, £14 each', avBg: '#c0457e', avInitial: 'M' },
+      { id: 'R2', name: 'Unknown sender', handle: '+44 7700 900145', channel: 'Telegram', time: '38 min ago', photos: 2, caption: 'trainers, sizes 8–10, 25 each', avBg: '#6b7280', avInitial: '?' },
+    ];
+
+    const activeVendors = [
+      { key: 'camden',   rel: 98, lead: '1 day',  products: 42, payout: 612 },
+      { key: 'northern', rel: 96, lead: '2 days', products: 35, payout: 528 },
+      { key: 'eastside', rel: 95, lead: '2 days', products: 28, payout: 840 },
+      { key: 'lola',     rel: 91, lead: '1 day',  products: 63, payout: 390 },
+      { key: 'brick',    rel: 88, lead: '3 days', products: 17, payout: 255 },
+    ];
+
+    const catalog = [
+      { title: 'Ribbed knit jumper — Cream', vendor: 'camden', price: 48, cost: 24 },
+      { title: 'Cotton oversized shirt — Stone', vendor: 'camden', price: 72, cost: 30 },
+      { title: 'Pleated midi skirt — Black', vendor: 'lola', price: 80, cost: 36 },
+      { title: 'Floral wrap dress — Green', vendor: 'lola', price: 90, cost: 41 },
+      { title: 'Suede court shoes — Tan', vendor: 'eastside', price: 66, cost: 38 },
+      { title: 'Retro runner — Sail/Gum', vendor: 'eastside', price: 88, cost: 50 },
+      { title: 'Quilted weekender — Olive', vendor: 'brick', price: 106, cost: 52 },
+      { title: 'Carpenter trousers — Ecru', vendor: 'northern', price: 78, cost: 34 },
+    ];
+
+    const channels = [
+      { key: 'tgch', name: 'Telegram channel', reach: '2,140 members', glyph: 'T', iconBg: '#e7f0fd', iconColor: '#1f6feb', on: true },
+      { key: 'tgdm', name: 'Telegram DMs', reach: '880 opted in', glyph: 'D', iconBg: '#e7f0fd', iconColor: '#1f6feb', on: true },
+      { key: 'wa',   name: 'WhatsApp broadcast', reach: '1,310 contacts', glyph: 'W', iconBg: '#e7f4ee', iconColor: '#0a7a52', on: true },
+      { key: 'ig',   name: 'Instagram post + story', reach: '5,400 followers', glyph: 'I', iconBg: '#fbeef4', iconColor: '#c0457e', on: false },
+      { key: 'shop', name: '“Today’s Drop” collection', reach: 'On-store landing', glyph: 'S', iconBg: '#eef0fb', iconColor: '#4b53b5', on: true },
+    ];
+
+    return {
+      screen: 'today', vendors, orders, selected, listings, vendorReqs, activeVendors, catalog, channels,
+      filter: 'all', drawerId: null, toast: null,
+      listingVendor: 'all', listingSort: 'conf-asc', openMenu: null, vendorSearch: '',
+      approvedCount: 0, publishedToday: 12, broadcasted: false, lastRunTime: null,
+    };
+  }
+
+  // ---------- helpers ----------
+  get cur() { return this.props.currency ?? '£'; }
+  money(n) {
+    if (n === null || n === undefined) return '—';
+    return this.cur + Number(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  money0(n) { return this.cur + Number(n).toLocaleString('en-GB', { maximumFractionDigits: 0 }); }
+  badge(match) {
+    if (match === 'MATCHED')   return { label: 'Matched',        bg: '#e7f4ee', color: '#0a7a52' };
+    if (match === 'MISMATCH')  return { label: 'Amount off',     bg: '#fbf1dd', color: '#9a5b00' };
+    return { label: 'Duplicate proof', bg: '#fce9e7', color: '#b3261e' };
+  }
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 3400);
+  }
+  go(screen) { this.setState({ screen, drawerId: null }); }
+
+  // ---------- actions ----------
+  toggleOrder(id) { this.setState(s => ({ selected: { ...s.selected, [id]: !s.selected[id] } })); }
+  toggleAll() {
+    this.setState(s => {
+      const rows = s.orders.filter(o => this._inFilter(o, s.filter));
+      const allOn = rows.every(o => s.selected[o.id]);
+      const sel = { ...s.selected };
+      rows.forEach(o => { sel[o.id] = !allOn; });
+      return { selected: sel };
+    });
+  }
+  _inFilter(o, f) {
+    if (f === 'matched') return o.match === 'MATCHED';
+    if (f === 'flagged') return o.match !== 'MATCHED';
+    return true;
+  }
+  approveBatch() {
+    const s = this.state;
+    const ids = s.orders.filter(o => s.selected[o.id]).map(o => o.id);
+    if (!ids.length) return;
+    const remaining = s.orders.filter(o => !s.selected[o.id]);
+    this.setState({ orders: remaining, drawerId: null, approvedCount: s.approvedCount + ids.length });
+    this.showToast(ids.length + ' orders approved — marked paid in Shopify, couriers dispatched.');
+  }
+  approveOne(id) {
+    this.setState(s => ({ orders: s.orders.filter(o => o.id !== id), drawerId: null }));
+    this.showToast('Order #' + id + ' approved — paid in Shopify, courier dispatched.');
+  }
+  requestProof(id) {
+    this.setState(s => ({ orders: s.orders.filter(o => o.id !== id), drawerId: null }));
+    this.showToast('New proof requested from the customer for #' + id + '.');
+  }
+  openDrawer(id) { this.setState({ drawerId: id }); }
+  closeDrawer() { this.setState({ drawerId: null }); }
+  setFilter(f) { this.setState({ filter: f }); }
+
+  approveVendor(id) {
+    const v = this.state.vendorReqs.find(r => r.id === id);
+    this.setState(s => ({ vendorReqs: s.vendorReqs.filter(r => r.id !== id) }));
+    this.showToast((v ? v.name : 'Vendor') + ' registered as a Shopify Location.');
+  }
+  rejectVendor(id) {
+    this.setState(s => ({ vendorReqs: s.vendorReqs.filter(r => r.id !== id) }));
+    this.showToast('Sender rejected — their messages will be ignored.');
+  }
+  publishListing(l) {
+    if (l.blocked) { this.showToast('Add a vendor cost first — this listing has no price.'); return; }
+    this.setState(s => ({ listings: s.listings.filter(x => x.id !== l.id), publishedToday: s.publishedToday + 1 }));
+    this.showToast('“' + l.title + '” published to Shopify.');
+  }
+  rejectListing(id) {
+    this.setState(s => ({ listings: s.listings.filter(x => x.id !== id) }));
+    this.showToast('Draft discarded.');
+  }
+  toggleMenu(which) { this.setState(s => ({ openMenu: s.openMenu === which ? null : which, vendorSearch: '' })); }
+  closeMenus() { this.setState({ openMenu: null }); }
+  onVendorSearch(e) { const v = e.target.value; this.setState({ vendorSearch: v }); }
+  pickVendor(key) { this.setState({ listingVendor: key, openMenu: null, vendorSearch: '' }); }
+  clearVendor() { this.setState({ listingVendor: 'all' }); }
+  setSort(v) { this.setState({ listingSort: v, openMenu: null }); }
+  toggleChannel(key) {
+    this.setState(s => ({ channels: s.channels.map(c => c.key === key ? { ...c, on: !c.on } : c) }));
+  }
+  broadcast() {
+    const on = this.state.channels.filter(c => c.on);
+    if (!on.length) { this.showToast('Turn on at least one channel first.'); return; }
+    const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    this.setState({ broadcasted: true, lastRunTime: t });
+    this.showToast('Catalog broadcast to ' + on.length + ' channels.');
+  }
+
+  // ---------- render ----------
+  renderVals() {
+    const s = this.state;
+    const V = s.vendors;
+    const navBase = 'display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:500;text-decoration:none;transition:background .12s;';
+    const navOn = navBase + 'background:#f0f0f1;color:#1a1a1a;font-weight:700;';
+    const navOff = navBase + 'color:#444;';
+    const nav = k => s.screen === k ? navOn : navOff;
+
+    const matched = s.orders.filter(o => o.match === 'MATCHED');
+    const flagged = s.orders.filter(o => o.match !== 'MATCHED');
+    const filtRows = s.orders.filter(o => this._inFilter(o, s.filter));
+    const selOrders = s.orders.filter(o => s.selected[o.id]);
+    const selTotalNum = selOrders.reduce((a, o) => a + o.total, 0);
+    const batchTotal = s.orders.reduce((a, o) => a + o.total, 0);
+    const allOn = filtRows.length > 0 && filtRows.every(o => s.selected[o.id]);
+
+    const tab = active => 'font-size:13px;font-weight:600;padding:7px 14px;border-radius:8px;cursor:pointer;' + (active ? 'background:#1a1a1a;color:#fff;' : 'background:#fff;color:#6b6b6b;border:1px solid #e3e3e3;');
+
+    const orderRows = filtRows.map(o => {
+      const b = this.badge(o.match);
+      const on = !!s.selected[o.id];
+      const chips = [];
+      const seen = {};
+      o.items.forEach(it => { if (!seen[it.vendor]) { seen[it.vendor] = true; chips.push({ label: V[it.vendor].name, dot: V[it.vendor].dot }); } });
+      const itemSummary = o.items.length === 1 ? o.items[0].name : o.items.length + ' items · ' + chips.length + (chips.length === 1 ? ' vendor' : ' vendors');
+      return {
+        id: o.id, customer: o.customer, channel: o.channel, itemSummary, chips,
+        totalFmt: this.money(o.total),
+        badgeLabel: b.label, badgeBg: b.bg, badgeColor: b.color,
+        checkBg: on ? '#1a1a1a' : '#fff', checkBorder: on ? '#1a1a1a' : '#cfcfcf', checkOpacity: on ? 1 : 0,
+        rowBg: on ? '#fafbff' : '#fff',
+        onToggle: () => this.toggleOrder(o.id),
+        onOpen: () => this.openDrawer(o.id),
+      };
+    });
+
+    const confColor = c => c >= 70 ? '#9a5b00' : (c >= 55 ? '#b26b00' : '#b3261e');
+    const flagTone = blocked => blocked ? { color: '#b3261e', bg: '#fce9e7' } : { color: '#9a5b00', bg: '#fbf1dd' };
+
+    // --- vendor filter + sort for the listing review queue ---
+    const allListings = s.listings;
+    const vendorCounts = {};
+    allListings.forEach(l => { vendorCounts[l.vendor] = (vendorCounts[l.vendor] || 0) + 1; });
+    const distinctVendorKeys = Object.keys(vendorCounts).sort((a, b) =>
+      vendorCounts[b] - vendorCounts[a] || V[a].name.localeCompare(V[b].name));
+    const q = s.vendorSearch.trim().toLowerCase();
+    const vendorMenuItems = distinctVendorKeys
+      .filter(k => !q || V[k].name.toLowerCase().includes(q))
+      .map(k => ({
+        name: V[k].name, dot: V[k].dot, count: vendorCounts[k] + '',
+        rowStyle: 'display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;cursor:pointer;font-size:13px;' +
+          (s.listingVendor === k ? 'background:#f0f0f1;font-weight:700;color:#1a1a1a;' : 'color:#3a3a3a;'),
+        onPick: () => this.pickVendor(k),
+      }));
+
+    let filtered = s.listingVendor === 'all' ? allListings.slice() : allListings.filter(l => l.vendor === s.listingVendor);
+    if (s.listingSort === 'conf-asc') filtered.sort((a, b) => a.conf - b.conf);
+    else if (s.listingSort === 'conf-desc') filtered.sort((a, b) => b.conf - a.conf);
+    else if (s.listingSort === 'vendor') filtered.sort((a, b) => V[a.vendor].name.localeCompare(V[b.vendor].name) || a.conf - b.conf);
+
+    const sortLabels = { 'conf-asc': 'Lowest confidence', 'conf-desc': 'Highest confidence', 'vendor': 'Group by vendor' };
+    const sortOptions = [
+      { v: 'conf-asc', label: 'Lowest confidence first' },
+      { v: 'conf-desc', label: 'Highest confidence first' },
+      { v: 'vendor', label: 'Group by vendor' },
+    ].map(o => ({
+      label: o.label,
+      rowStyle: 'padding:8px 9px;border-radius:8px;cursor:pointer;font-size:13px;' +
+        (s.listingSort === o.v ? 'background:#f0f0f1;font-weight:700;color:#1a1a1a;' : 'color:#3a3a3a;'),
+      onPick: () => this.setSort(o.v),
+    }));
+
+    const listingRows = filtered.map(l => {
+      const ft = flagTone(l.blocked);
+      const marginNum = (l.sell != null && l.cost != null) ? l.sell - l.cost : null;
+      return {
+        id: l.id, vendor: V[l.vendor].name, vendorDot: V[l.vendor].dot,
+        title: l.title, desc: l.desc, attrs: l.attrs, photoCount: l.photos,
+        confPct: l.conf + '%', confW: l.conf + '%', confColor: confColor(l.conf),
+        flag: l.flag, flagColor: ft.color, flagBg: ft.bg,
+        costFmt: this.money(l.cost), rule: l.rule,
+        sellFmt: l.blocked ? '— needs cost' : this.money(l.sell), sellColor: l.blocked ? '#b3261e' : '#1a1a1a',
+        marginFmt: marginNum != null ? '+' + this.money(marginNum) + ' margin' : 'price blocked',
+        publishLabel: l.blocked ? 'Add cost to publish' : 'Approve & publish',
+        publishStyle: 'width:100%;border:none;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;' + (l.blocked ? 'background:#fbf1dd;color:#9a5b00;' : 'background:#0c8a5f;color:#fff;'),
+        onPublish: () => this.publishListing(l),
+        onReject: () => this.rejectListing(l.id),
+      };
+    });
+
+    const relColor = r => r >= 95 ? '#0a7a52' : (r >= 90 ? '#9a5b00' : '#b26b00');
+    const vendorRows = s.activeVendors.map(v => ({
+      name: V[v.key].name, initial: V[v.key].short, dot: V[v.key].dot, location: V[v.key].location,
+      rel: v.rel + '%', relW: v.rel + '%', relColor: relColor(v.rel),
+      lead: v.lead, products: v.products, payout: this.money(v.payout),
+    }));
+
+    const vendorReqs = s.vendorReqs.map(r => ({
+      ...r, onApprove: () => this.approveVendor(r.id), onReject: () => this.rejectVendor(r.id),
+    }));
+
+    const catalogRows = s.catalog.map(p => ({
+      title: p.title, vendor: V[p.vendor].name, dot: V[p.vendor].dot,
+      price: this.money0(p.price), margin: this.money0(p.price - p.cost),
+    }));
+
+    const channelRows = s.channels.map(c => ({
+      name: c.name, reach: c.reach, glyph: c.glyph, iconBg: c.iconBg, iconColor: c.iconColor,
+      border: c.on ? '#cdd6f5' : '#ececec', bg: c.on ? '#f7f8fe' : '#fff',
+      switchBg: c.on ? '#0c8a5f' : '#d4d4d4', knobLeft: c.on ? '16px' : '2px',
+      onToggle: () => this.toggleChannel(c.key),
+    }));
+    const broadcastStats = s.channels.filter(c => c.on).map(c => ({
+      name: c.name, sent: c.reach.replace(/[^0-9,]/g, '') ? c.reach.match(/[\d,]+/)[0] + ' delivered' : 'posted',
+    }));
+
+    // analytics
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const rev = [720, 980, 640, 1120, 880, 1240, 890];
+    const mar = [228, 318, 196, 372, 281, 402, 268];
+    const maxRev = Math.max(...rev);
+    const chartH = 150;
+    const chartBars = days.map((d, i) => {
+      const rh = Math.round(rev[i] / maxRev * chartH);
+      const mh = Math.round(mar[i] / rev[i] * rh);
+      return { label: d, revFmt: this.money0(rev[i]), revH: rh + 'px', marH: mh + 'px' };
+    });
+    const totalRev = rev.reduce((a, b) => a + b, 0);
+    const totalMar = mar.reduce((a, b) => a + b, 0);
+    const anKpis = [
+      { label: 'Revenue (7d)', value: this.money0(totalRev), sub: '73 orders', color: '#1a1a1a' },
+      { label: 'Vendor payout', value: this.money0(totalRev - totalMar), sub: 'cost of goods', color: '#1a1a1a' },
+      { label: 'Margin (7d)', value: this.money0(totalMar), sub: 'shop profit', color: '#0a7a52' },
+      { label: 'Blended margin', value: Math.round(totalMar / totalRev * 100) + '%', sub: 'after vendor cost', color: '#0a7a52' },
+      { label: 'Avg order', value: this.money0(Math.round(totalRev / 73)), sub: '+6% vs prior', color: '#1a1a1a' },
+    ];
+    const perfRaw = [
+      { key: 'lola', units: 41, revenue: 1620, payout: 738 },
+      { key: 'camden', units: 33, revenue: 1480, payout: 612 },
+      { key: 'eastside', units: 22, revenue: 1310, payout: 760 },
+      { key: 'northern', units: 19, revenue: 980, payout: 470 },
+      { key: 'brick', units: 14, revenue: 850, payout: 408 },
+    ];
+    const vendorPerf = perfRaw.map(p => {
+      const m = p.revenue - p.payout;
+      return {
+        name: V[p.key].name, dot: V[p.key].dot, units: p.units,
+        revenue: this.money0(p.revenue), payout: this.money0(p.payout),
+        marW: Math.round(m / p.revenue * 100) + '%', marPct: Math.round(m / p.revenue * 100) + '%',
+      };
+    });
+
+    // loop steps
+    const loopSteps = [
+      { label: 'Ingested', value: '18', sub: 'vendor messages', color: '#4b53b5', bar: '#4b53b5' },
+      { label: 'Listed', value: s.publishedToday + '', sub: 'auto-published', color: '#4b53b5', bar: '#7c83d6' },
+      { label: 'Catalog', value: s.broadcasted ? 'Sent' : 'Ready', sub: s.broadcasted ? 'all channels' : 'awaiting send', color: '#1f6feb', bar: '#1f6feb' },
+      { label: 'Orders', value: (s.orders.length + s.approvedCount) + '', sub: 'placed today', color: '#0a7a52', bar: '#5fbf91' },
+      { label: 'Approved', value: s.approvedCount + '', sub: 'by you', color: '#0a7a52', bar: '#0c8a5f' },
+      { label: 'Dispatched', value: s.approvedCount + '', sub: 'couriers booked', color: '#b26b00', bar: '#e0b261' },
+    ];
+
+    const activity = [
+      { time: '09:14', text: 'Catalog broadcast to 4 channels — 1,240 recipients', tag: 'Catalog', tagColor: '#4b53b5', tagBg: '#eef0fb', dot: '#4b53b5' },
+      { time: '08:52', text: '12 products auto-published — Camden Threads, Lola’s Vintage +3', tag: 'Listings', tagColor: '#9a5b00', tagBg: '#fbf1dd', dot: '#b26b00' },
+      { time: '08:40', text: 'Order #1048 payment proof matched (£184.00)', tag: 'Payment', tagColor: '#0a7a52', tagBg: '#e7f4ee', dot: '#0c8a5f' },
+      { time: '08:31', text: 'New vendor request from @maya_r_ldn held for approval', tag: 'Vendor', tagColor: '#1f6feb', tagBg: '#e7f0fd', dot: '#1f6feb' },
+      { time: '08:05', text: 'Order #1039 delivered — settled £24.00 margin', tag: 'Delivered', tagColor: '#0a7a52', tagBg: '#e7f4ee', dot: '#0c8a5f' },
+    ];
+
+    // drawer
+    const drawerO = s.orders.find(o => o.id === s.drawerId);
+    let dr = null;
+    if (drawerO) {
+      const b = this.badge(drawerO.match);
+      const groupsMap = {};
+      drawerO.items.forEach(it => {
+        if (!groupsMap[it.vendor]) groupsMap[it.vendor] = [];
+        groupsMap[it.vendor].push({ name: it.name, price: this.money(it.price) });
+      });
+      const av = { camden: '1 day', eastside: '2 days', lola: '1 day', brick: '3 days', northern: '2 days' };
+      const groups = Object.keys(groupsMap).map(k => ({ vendor: V[k].name, dot: V[k].dot, lead: 'pickup ' + av[k], items: groupsMap[k] }));
+      const isMatch = drawerO.match === 'MATCHED';
+      let note, noteColor, noteBg;
+      if (drawerO.match === 'MATCHED') { note = 'Amount and reference match the order total within tolerance. Cleared to approve.'; noteColor = '#0a7a52'; noteBg = '#e7f4ee'; }
+      else if (drawerO.match === 'MISMATCH') { note = 'Proof shows ' + this.money(drawerO.proofAmount) + ' but the order total is ' + this.money(drawerO.total) + ' — ' + this.money(drawerO.total - drawerO.proofAmount) + ' short. Request a corrected transfer.'; noteColor = '#9a5b00'; noteBg = '#fbf1dd'; }
+      else { note = 'This screenshot’s image hash matches a proof already used on order #1042. Likely a reused screenshot — do not approve.'; noteColor = '#b3261e'; noteBg = '#fce9e7'; }
+      dr = {
+        id: drawerO.id, customer: drawerO.customer, channel: drawerO.channel, address: drawerO.address,
+        badgeLabel: b.label, badgeBg: b.bg, badgeColor: b.color,
+        vendorCount: groups.length, groups, totalFmt: this.money(drawerO.total),
+        proofAmt: this.money(drawerO.proofAmount), proofRef: drawerO.proofRef, payer: drawerO.payer,
+        amtColor: drawerO.proofAmount === drawerO.total ? '#0a7a52' : '#b3261e',
+        note, noteColor, noteBg,
+        approveLabel: isMatch ? 'Approve & dispatch' : 'Approve anyway',
+        approveBg: isMatch ? '#0c8a5f' : '#b26b00',
+        onApprove: () => this.approveOne(drawerO.id),
+        onRequest: () => this.requestProof(drawerO.id),
+      };
+    }
+
+    return {
+      managerName: this.props.managerName ?? 'Bilal',
+      initial: (this.props.managerName ?? 'Bilal').charAt(0).toUpperCase(),
+      isToday: s.screen === 'today', isApprovals: s.screen === 'approvals', isListings: s.screen === 'listings',
+      isVendors: s.screen === 'vendors', isCatalog: s.screen === 'catalog', isAnalytics: s.screen === 'analytics',
+      navToday: nav('today'), navApprovals: nav('approvals'), navListings: nav('listings'),
+      navVendors: nav('vendors'), navCatalog: nav('catalog'), navAnalytics: nav('analytics'),
+      cApprovals: s.orders.length, cListings: s.listings.length, cVendors: s.vendorReqs.length,
+      goToday: () => this.go('today'), goApprovals: () => this.go('approvals'), goListings: () => this.go('listings'),
+      goVendors: () => this.go('vendors'), goCatalog: () => this.go('catalog'), goAnalytics: () => this.go('analytics'),
+      autoPct: '85%', autoDot: s.orders.length ? '#e0b261' : '#37b97f',
+      autoCaption: s.orders.length ? s.orders.length + ' orders await you' : 'All caught up',
+
+      // today
+      todayDate: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
+      todayShort: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      kRevenue: this.money(batchTotal + 706), kMargin: this.money(268), kMarginPct: '30%',
+      kAwaiting: s.orders.length + '', kAwaitingSub: this.money(batchTotal) + ' to confirm',
+      kListed: s.publishedToday + '',
+      attnApprovals: matched.length + ' matched · ' + flagged.length + ' flagged for a look. ' + this.money(batchTotal) + ' total.',
+      attnListings: s.listings.length ? s.listings.length + ' AI drafts below the confidence threshold need a quick check.' : 'Queue clear — everything auto-published.',
+      attnVendors: s.vendorReqs.length ? s.vendorReqs.length + ' unknown senders waiting to be registered or rejected.' : 'No pending senders.',
+      loopSteps, activity,
+
+      // approvals
+      sMatched: matched.length + '', sFlagged: flagged.length + '', sBatchTotal: this.money(batchTotal),
+      cAll: s.orders.length + '',
+      tabAll: tab(s.filter === 'all'), tabMatched: tab(s.filter === 'matched'), tabFlagged: tab(s.filter === 'flagged'),
+      filterAll: () => this.setFilter('all'), filterMatched: () => this.setFilter('matched'), filterFlagged: () => this.setFilter('flagged'),
+      orderRows,
+      allCheckBg: allOn ? '#1a1a1a' : '#fff', allCheckBorder: allOn ? '#1a1a1a' : '#cfcfcf', allCheckOpacity: allOn ? 1 : 0,
+      toggleAll: () => this.toggleAll(),
+      showApproveBar: s.screen === 'approvals' && selOrders.length > 0,
+      selCount: selOrders.length + '', selTotal: this.money(selTotalNum),
+      approveLabel: 'Approve ' + selOrders.length + (selOrders.length === 1 ? ' order' : ' orders'),
+      approveBatch: () => this.approveBatch(),
+
+      // listings
+      listingRows,
+      listingsAllEmpty: allListings.length === 0,
+      listingsFilteredEmpty: filtered.length === 0 && allListings.length > 0,
+      listingsSubtext: allListings.length + ' drafts from ' + distinctVendorKeys.length + ' vendors today',
+      vendorMenuItems, vendorMenuNoResults: vendorMenuItems.length === 0,
+      vendorBtnLabel: s.listingVendor === 'all' ? 'All vendors' : V[s.listingVendor].name,
+      vendorBtnCount: s.listingVendor === 'all' ? allListings.length + '' : (vendorCounts[s.listingVendor] || 0) + '',
+      vendorMenuOpen: s.openMenu === 'vendor',
+      allRowStyle: 'display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;cursor:pointer;font-size:13px;' +
+        (s.listingVendor === 'all' ? 'background:#f0f0f1;font-weight:700;color:#1a1a1a;' : 'color:#3a3a3a;'),
+      totalListings: allListings.length + '', shownListings: filtered.length + '',
+      isListingFiltered: s.listingVendor !== 'all',
+      sortBtnLabel: sortLabels[s.listingSort], sortOptions, sortMenuOpen: s.openMenu === 'sort',
+      anyListMenuOpen: s.openMenu === 'vendor' || s.openMenu === 'sort',
+      toggleVendorMenu: () => this.toggleMenu('vendor'),
+      toggleSortMenu: () => this.toggleMenu('sort'),
+      closeListMenus: () => this.closeMenus(),
+      onVendorSearch: (e) => this.onVendorSearch(e),
+      pickAllVendors: () => this.pickVendor('all'),
+      clearVendor: () => this.clearVendor(),
+
+      // vendors
+      vendorReqs, vendorReqsEmpty: s.vendorReqs.length === 0, vendorRows,
+
+      // catalog
+      catalogCount: s.catalog.length + '', catalogRows, channelRows,
+      onBroadcast: () => this.broadcast(), broadcastLabel: s.broadcasted ? 'Broadcast again' : 'Broadcast now',
+      broadcasted: s.broadcasted, lastRunTime: s.lastRunTime, broadcastStats,
+
+      // analytics
+      anKpis, chartBars, vendorPerf,
+
+      // drawer + toast
+      drawerOpen: !!dr, dr: dr || {}, closeDrawer: () => this.closeDrawer(),
+      toastShown: !!s.toast, toastMsg: s.toast || '',
+    };
+  }
+}
+</script>
+</body>
+</html>

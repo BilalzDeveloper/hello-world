@@ -47,7 +47,7 @@ Phone on the same Wi-Fi can use it too: `http://<your-laptop-ip>:3000`.
 | `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | [my.telegram.org](https://my.telegram.org) → API development tools |
 | `TELEGRAM_SESSION` | printed by `node scripts/login.js` (paste the whole COPY-THIS block) |
 | `ANTHROPIC_KEY` | console.anthropic.com → API Keys |
-| `SHOPIFY_TOKEN` | Shopify admin → Settings → Apps → Develop apps → API credentials (`shpat_…`) |
+| `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` | Shopify admin → Settings → Apps → Develop apps → "Build apps in Dev Dashboard" → your app → Settings → Credentials. (Legacy custom apps with a directly-revealed `shpat_…` token were retired by Shopify in Jan 2026 — the app now exchanges these for a short-lived access token itself.) |
 | `SHOPIFY_DOMAIN` | `uk-stylish.myshopify.com` |
 | `APP_PASSWORD` | anything — your PWA login password |
 | `PUBLISH_STATUS` | `ACTIVE` (or `DRAFT` to stage products in Shopify before going live) |

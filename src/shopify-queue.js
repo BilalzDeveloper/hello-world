@@ -8,7 +8,10 @@ const path = require('path');
 const db = require('./db');
 const vendors = require('./vendors');
 
-const API_VERSION = '2024-01';
+// Bump this when Shopify retires the floor version (every ~12 months) —
+// check https://shopify.dev/docs/api/usage/versioning. Pinned to a dated
+// stable version rather than "latest" so behavior doesn't shift under us.
+const API_VERSION = '2025-10';
 const THROTTLE_MS = 700;          // ~1.5 requests/sec
 const MAX_ATTEMPTS = 3;
 const PUBLISH_STATUS = (process.env.PUBLISH_STATUS || 'ACTIVE').toUpperCase();
@@ -16,23 +19,53 @@ const PUBLISH_STATUS = (process.env.PUBLISH_STATUS || 'ACTIVE').toUpperCase();
 let running = false;
 let lastRequestAt = 0;
 let collectionCache = null; // title(lower) -> id, fetched once per run
+let cachedToken = null; // { token, expiresAt } — see getAccessToken()
 
 function shopifyConfig() {
   const domain = process.env.SHOPIFY_DOMAIN;
-  const token = process.env.SHOPIFY_TOKEN;
-  if (!domain || !token) throw new Error('SHOPIFY_DOMAIN / SHOPIFY_TOKEN not set');
-  return { domain, token };
+  const clientId = process.env.SHOPIFY_CLIENT_ID;
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
+  if (!domain || !clientId || !clientSecret) {
+    throw new Error('SHOPIFY_DOMAIN / SHOPIFY_CLIENT_ID / SHOPIFY_CLIENT_SECRET not set');
+  }
+  return { domain, clientId, clientSecret };
+}
+
+function shopifyScheme(domain) {
+  return domain.startsWith('localhost') || domain.startsWith('127.') ? 'http' : 'https';
+}
+
+// Custom apps created via Shopify's Dev Dashboard (legacy "custom apps" with
+// directly-revealed static tokens were retired Jan 2026) authenticate via the
+// client credentials grant instead: exchange client_id/client_secret for an
+// access token that's valid 24h, then re-request once it's about to expire.
+// https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/client-credentials-grant
+async function getAccessToken() {
+  if (cachedToken && cachedToken.expiresAt > Date.now()) return cachedToken.token;
+
+  const { domain, clientId, clientSecret } = shopifyConfig();
+  const r = await fetch(`${shopifyScheme(domain)}://${domain}/admin/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'client_credentials', client_id: clientId, client_secret: clientSecret }),
+  });
+  if (!r.ok) throw new Error(`Shopify token exchange HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const d = await r.json();
+  if (!d.access_token) throw new Error('Shopify token exchange returned no access_token');
+  // refresh a minute early so an in-flight request never races real expiry
+  cachedToken = { token: d.access_token, expiresAt: Date.now() + (d.expires_in - 60) * 1000 };
+  return cachedToken.token;
 }
 
 async function gql(query, variables = {}) {
-  const { domain, token } = shopifyConfig();
+  const { domain } = shopifyConfig();
+  const token = await getAccessToken();
   // global throttle across the whole queue
   const wait = lastRequestAt + THROTTLE_MS - Date.now();
   if (wait > 0) await sleep(wait);
   lastRequestAt = Date.now();
 
-  const scheme = domain.startsWith('localhost') || domain.startsWith('127.') ? 'http' : 'https';
-  const r = await fetch(`${scheme}://${domain}/admin/api/${API_VERSION}/graphql.json`, {
+  const r = await fetch(`${shopifyScheme(domain)}://${domain}/admin/api/${API_VERSION}/graphql.json`, {
     method: 'POST',
     headers: {
       'X-Shopify-Access-Token': token,
@@ -191,55 +224,72 @@ async function publishOne(row) {
     }
   }
 
-  // 2. productCreate with options + variants = sizes × colours
+  // 2. resolve the target collection (IDs cached once per run) up front so it
+  // can be set in the same productSet call below.
+  const hasCollection = row.collection && !row.collection.includes('⚠️');
+  let collectionId = null;
+  if (hasCollection) {
+    collectionId = await getCollectionId(row.collection);
+    if (!collectionId) console.error(`collection not found on Shopify: ${row.collection}`);
+  }
+
+  // Shopify's "Type" field (Product organization → Type in admin) is what
+  // every smart collection's rule matches against — set it to the resolved
+  // collection name, not the AI's internal category, so it reads the same
+  // way as the rest of the catalog and the smart-collection rule also
+  // naturally includes it (belt-and-suspenders alongside the explicit
+  // `collections` assignment below, which is what actually guarantees
+  // membership regardless of Type).
+  const shopifyType = hasCollection ? row.collection : row.product_type;
+
+  // 3. one variant per size×colour combination. productSet (current "new
+  // product model" API) creates the product, its options, every variant, and
+  // its collection membership in a single call — productCreate now only
+  // supports a product's initial variant, and collectionAddProducts is
+  // deprecated in favour of setting collections directly here.
   const variants = [];
   for (const colour of colours) {
     for (const size of sizes) {
-      variants.push({ price: String(row.price), options: [size, colour], inventoryPolicy: 'CONTINUE' });
+      variants.push({
+        price: String(row.price),
+        inventoryPolicy: 'CONTINUE',
+        optionValues: [
+          { optionName: 'Size', name: size },
+          { optionName: 'Colour', name: colour },
+        ],
+      });
     }
   }
 
   const d = await gql(
-    `mutation productCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
-       productCreate(input: $input, media: $media) {
+    `mutation productSet($input: ProductSetInput!, $synchronous: Boolean!) {
+       productSet(input: $input, synchronous: $synchronous) {
          product { id }
          userErrors { field message }
        }
      }`,
     {
+      synchronous: true,
       input: {
         title: row.title,
         vendor: row.vendor,
-        productType: row.product_type,
+        productType: shopifyType,
         status: PUBLISH_STATUS,
-        tags: [row.vendor, row.product_type],
-        options: ['Size', 'Colour'],
+        tags: [...new Set([row.vendor, row.product_type, shopifyType])].filter(Boolean),
+        ...(collectionId ? { collections: [collectionId] } : {}),
+        files: mediaUrls.map((url) => ({ originalSource: url, contentType: 'IMAGE' })),
+        productOptions: [
+          { name: 'Size', position: 1, values: sizes.map((s) => ({ name: s })) },
+          { name: 'Colour', position: 2, values: colours.map((c) => ({ name: c })) },
+        ],
         variants,
       },
-      media: mediaUrls.map((url) => ({ originalSource: url, mediaContentType: 'IMAGE' })),
     }
   );
-  const errors = d.productCreate?.userErrors;
+  const errors = d.productSet?.userErrors;
   if (errors?.length) throw new Error(errors.map((e) => e.message).join(', '));
-  const productId = d.productCreate?.product?.id;
-  if (!productId) throw new Error('productCreate returned no product id');
-
-  // 3. add to collection (IDs cached once per run)
-  if (row.collection && !row.collection.includes('⚠️')) {
-    const colId = await getCollectionId(row.collection);
-    if (colId) {
-      const add = await gql(
-        `mutation collectionAddProducts($id: ID!, $productIds: [ID!]!) {
-           collectionAddProducts(id: $id, productIds: $productIds) { userErrors { message } }
-         }`,
-        { id: colId, productIds: [productId] }
-      );
-      const errs = add.collectionAddProducts?.userErrors;
-      if (errs?.length) console.error('collection add warning:', errs.map((e) => e.message).join(', '));
-    } else {
-      console.error(`collection not found on Shopify: ${row.collection}`);
-    }
-  }
+  const productId = d.productSet?.product?.id;
+  if (!productId) throw new Error('productSet returned no product id');
 
   return productId;
 }
