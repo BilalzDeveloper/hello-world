@@ -108,8 +108,17 @@ CREATE INDEX IF NOT EXISTS idx_review_state    ON review_queue(state);
 CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage(created_at);
 `;
 
+// Per-listing AI-generated marketing content: { seoTitle, seoDescription,
+// descriptionHtml, tags[], altText, socialCaption, emailBlurb, adHeadline,
+// adPrimaryText }. ALTER (not part of CREATE TABLE) so it lands on the
+// review_queue table that already exists in deployed databases.
+const MIGRATIONS = [
+  `ALTER TABLE review_queue ADD COLUMN IF NOT EXISTS marketing JSONB`,
+];
+
 async function bootstrap() {
   await pool.query(SCHEMA);
+  for (const m of MIGRATIONS) await pool.query(m);
   for (const [type, price] of Object.entries(PRICE_SEED)) {
     await pool.query(
       `INSERT INTO price_rules (product_type, price)

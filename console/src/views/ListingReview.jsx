@@ -211,6 +211,7 @@ export default function ListingReview() {
                 onPublish={(price) => actions.approveAndPublishListing(l.id, price)}
                 onReject={() => actions.rejectListing(l.id)}
                 onUpdateField={(field, value) => actions.updateListingField(l.id, field, value)}
+                onUpdateMarketingField={(field, value) => actions.updateMarketingField(l.id, field, value)}
               />
             ))}
 
@@ -254,16 +255,31 @@ function MergeCheckbox({ checked, onClick }) {
 
 function ListingCard({
   l, mergeChecked, splitSelected, onToggleMerge, onToggleSplitHash, onSplit, onOpenLightbox,
-  onPublish, onReject, onUpdateField,
+  onPublish, onReject, onUpdateField, onUpdateMarketingField,
 }) {
   const { config } = useAuth();
   const badge = confidenceBadge(l.confidence);
   const [priceInput, setPriceInput] = useState(l.price ?? '');
   const [draft, setDraft] = useState({ title: l.title || '', sizes: l.sizes || '', colours: l.colours || '', notes: l.notes || '' });
+  const m = l.marketing || {};
+  const [marketingDraft, setMarketingDraft] = useState({
+    seoTitle: m.seoTitle || '', seoDescription: m.seoDescription || '', tags: (m.tags || []).join(', '),
+    socialCaption: m.socialCaption || '', emailBlurb: m.emailBlurb || '', adHeadline: m.adHeadline || '', adPrimaryText: m.adPrimaryText || '',
+  });
+  const [showMarketing, setShowMarketing] = useState(false);
   const [busy, setBusy] = useState(false);
   const priceValid = priceInput !== '' && Number.isFinite(Number(priceInput)) && Number(priceInput) > 0;
   const imageUrls = l.imageUrls || [];
   const splitCount = Object.keys(splitSelected).length;
+
+  function saveMarketingField(field) {
+    const value = field === 'tags'
+      ? marketingDraft.tags.split(',').map((s) => s.trim()).filter(Boolean)
+      : marketingDraft[field];
+    const current = field === 'tags' ? (m.tags || []) : (m[field] || '');
+    if (field === 'tags' ? value.join(',') === current.join(',') : value === current) return;
+    onUpdateMarketingField(field, value);
+  }
 
   function saveField(field) {
     const value = draft[field];
@@ -307,7 +323,8 @@ function ListingCard({
   };
 
   return (
-    <div style={{ background: '#fff', border: '1px solid #e3e3e3', borderRadius: 12, padding: 18, display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+    <div style={{ background: '#fff', border: '1px solid #e3e3e3', borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: '0 0 auto' }}>
         <MergeCheckbox checked={mergeChecked} onClick={onToggleMerge} />
         <div style={{ display: 'flex', gap: 8 }}>
@@ -435,12 +452,76 @@ function ListingCard({
         </button>
       </div>
     </div>
+
+    <div>
+      <div
+        onClick={() => setShowMarketing((v) => !v)}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#4b53b5', cursor: 'pointer' }}
+      >
+        ✨ Marketing (SEO, social, email, ads)
+        <span style={{ display: 'inline-flex', transform: showMarketing ? 'rotate(180deg)' : 'none' }}>
+          <ChevronDownIcon stroke="#4b53b5" size={12} width={2.4} />
+        </span>
+      </div>
+      {showMarketing && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12, paddingTop: 14, borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <LabeledField
+              label="SEO title" wide
+              value={marketingDraft.seoTitle}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, seoTitle: v }))}
+              onBlur={() => saveMarketingField('seoTitle')}
+            />
+            <LabeledField
+              label="Tags"
+              value={marketingDraft.tags}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, tags: v }))}
+              onBlur={() => saveMarketingField('tags')}
+            />
+          </div>
+          <LabeledTextarea
+            label="SEO meta description" value={marketingDraft.seoDescription} wide
+            onChange={(v) => setMarketingDraft((d) => ({ ...d, seoDescription: v }))}
+            onBlur={() => saveMarketingField('seoDescription')}
+          />
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <LabeledTextarea
+              label="Social caption" value={marketingDraft.socialCaption}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, socialCaption: v }))}
+              onBlur={() => saveMarketingField('socialCaption')}
+              copyable
+            />
+            <LabeledTextarea
+              label="Email blurb" value={marketingDraft.emailBlurb}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, emailBlurb: v }))}
+              onBlur={() => saveMarketingField('emailBlurb')}
+              copyable
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <LabeledField
+              label="Ad headline"
+              value={marketingDraft.adHeadline}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, adHeadline: v }))}
+              onBlur={() => saveMarketingField('adHeadline')}
+            />
+            <LabeledTextarea
+              label="Ad primary text" value={marketingDraft.adPrimaryText}
+              onChange={(v) => setMarketingDraft((d) => ({ ...d, adPrimaryText: v }))}
+              onBlur={() => saveMarketingField('adPrimaryText')}
+              copyable
+            />
+          </div>
+        </div>
+      )}
+    </div>
+    </div>
   );
 }
 
-function LabeledField({ label, value, onChange, onBlur }) {
+function LabeledField({ label, value, onChange, onBlur, wide }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: wide ? '1 1 280px' : '0 0 auto' }}>
       <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.4px', color: '#9a9a9a', textTransform: 'uppercase' }}>{label}</span>
       <input
         value={value}
@@ -449,6 +530,44 @@ function LabeledField({ label, value, onChange, onBlur }) {
         style={{
           border: '1px solid #e8e8e8', borderRadius: 6, padding: '4px 7px', fontFamily: 'inherit', fontSize: 12.5,
           color: '#3a3a3a', outline: 'none', background: '#fafafa', minWidth: 140,
+        }}
+      />
+    </div>
+  );
+}
+
+function LabeledTextarea({ label, value, onChange, onBlur, copyable, wide }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard?.writeText(value || '');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+  // `wide`: standalone, full-width field inside a column container — no
+  // main-axis flex sizing (flex-basis means height there, not width).
+  // Otherwise: paired side-by-side inside a row container — flex-basis
+  // there does mean width, so let it share/wrap normally.
+  const rootStyle = wide
+    ? { display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }
+    : { display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 260px', minWidth: 220 };
+  return (
+    <div style={rootStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.4px', color: '#9a9a9a', textTransform: 'uppercase' }}>{label}</span>
+        {copyable && (
+          <span onClick={handleCopy} style={{ fontSize: 10.5, fontWeight: 700, color: copied ? '#0a7a52' : '#4b53b5', cursor: 'pointer' }}>
+            {copied ? 'Copied ✓' : 'Copy'}
+          </span>
+        )}
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        rows={2}
+        style={{
+          border: '1px solid #e8e8e8', borderRadius: 6, padding: '5px 7px', fontFamily: 'inherit', fontSize: 12.5,
+          color: '#3a3a3a', outline: 'none', background: '#fafafa', resize: 'vertical', lineHeight: 1.4,
         }}
       />
     </div>

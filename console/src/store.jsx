@@ -240,6 +240,15 @@ export function StoreProvider({ children }) {
         }
       },
 
+      updateMarketingField: async (id, field, value) => {
+        try {
+          const row = await api.patchReview(id, { marketing: { [field]: value } });
+          dispatch({ type: 'LISTING_UPDATED', row });
+        } catch (e) {
+          dispatch({ type: 'SHOW_TOAST', message: e.message });
+        }
+      },
+
       toggleMergeSelect: (id) => dispatch({ type: 'TOGGLE_MERGE_SELECT', id }),
       mergeSelectedListings: async (ids) => {
         if (ids.length < 2) return;

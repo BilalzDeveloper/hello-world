@@ -242,6 +242,11 @@ async function publishOne(row) {
   // membership regardless of Type).
   const shopifyType = hasCollection ? row.collection : row.product_type;
 
+  // AI-generated marketing copy (see pipeline.js analysisPrompt) — optional,
+  // older rows or a parse failure leave this {} so every field below is a
+  // no-op fallback rather than a publish-blocking error.
+  const marketing = row.marketing || {};
+
   // 3. one variant per size×colour combination. productSet (current "new
   // product model" API) creates the product, its options, every variant, and
   // its collection membership in a single call — productCreate now only
@@ -275,9 +280,16 @@ async function publishOne(row) {
         vendor: row.vendor,
         productType: shopifyType,
         status: PUBLISH_STATUS,
-        tags: [...new Set([row.vendor, row.product_type, shopifyType])].filter(Boolean),
+        tags: [...new Set([row.vendor, row.product_type, shopifyType, ...(marketing.tags || [])])].filter(Boolean),
         ...(collectionId ? { collections: [collectionId] } : {}),
-        files: mediaUrls.map((url) => ({ originalSource: url, contentType: 'IMAGE' })),
+        ...(marketing.descriptionHtml ? { descriptionHtml: marketing.descriptionHtml } : {}),
+        ...(marketing.seoTitle || marketing.seoDescription
+          ? { seo: { title: marketing.seoTitle || row.title, description: marketing.seoDescription || undefined } }
+          : {}),
+        files: mediaUrls.map((url) => ({
+          originalSource: url, contentType: 'IMAGE',
+          ...(marketing.altText ? { alt: marketing.altText } : {}),
+        })),
         productOptions: [
           { name: 'Size', position: 1, values: sizes.map((s) => ({ name: s })) },
           { name: 'Colour', position: 2, values: colours.map((c) => ({ name: c })) },

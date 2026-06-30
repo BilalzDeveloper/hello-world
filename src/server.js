@@ -207,6 +207,22 @@ app.patch('/api/review/:id', async (req, res, next) => {
       sets.push(`collection = $${params.length}`);
     }
 
+    // Marketing fields (SEO, social, email, ad copy) are a JSONB blob —
+    // partial updates merge into whatever the AI already generated rather
+    // than requiring the whole object on every edit.
+    const MARKETING_FIELDS = ['seoTitle', 'seoDescription', 'descriptionHtml', 'tags', 'altText', 'socialCaption', 'emailBlurb', 'adHeadline', 'adPrimaryText'];
+    if (body.marketing && typeof body.marketing === 'object') {
+      const patch = {};
+      for (const f of MARKETING_FIELDS) {
+        if (!(f in body.marketing)) continue;
+        patch[f] = f === 'tags'
+          ? (Array.isArray(body.marketing[f]) ? body.marketing[f].map(String).filter(Boolean) : [])
+          : String(body.marketing[f] ?? '').slice(0, 2000);
+      }
+      params.push(JSON.stringify(patch));
+      sets.push(`marketing = COALESCE(marketing, '{}'::jsonb) || $${params.length}::jsonb`);
+    }
+
     if (action === 'approve') {
       const willHavePrice = 'price' in (req.body || {}) ? req.body.price : row.price;
       if (willHavePrice === null || willHavePrice === '' || Number(willHavePrice) <= 0) {

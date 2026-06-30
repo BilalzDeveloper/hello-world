@@ -51,6 +51,11 @@ ask it to flip the status.
 
 - ✅ **AI cost tracking (Settings page)** — every Anthropic Message Batches API result now records its token usage to a new `ai_usage` table; cost is calculated from Claude Haiku 4.5's published per-token pricing with the 50% batch discount applied. Settings shows Today / This month / All-time spend + token counts. **Anthropic has no API for account credit balance** (checked the full endpoint surface — Messages, Batches, Files, Models — it's Console-only at platform.claude.com), so this is calculated spend, not a live balance; the user chose not to add a manual balance/threshold tracker on top of it (2026-06-30).
 
+## Marketing
+
+- ✅ **AI-generated marketing content per listing** — the AI photo-analysis step now also generates SEO title/meta description/description/tags/alt text, a social media caption, an email blurb, and ad copy (headline + primary text) for every product, alongside the existing cataloging. SEO fields publish directly to Shopify (`seo.title`, `seo.description`, `descriptionHtml`, `tags`, photo `alt` text) via the existing `productSet` call. All fields are editable in a collapsible "Marketing" section on each Listing Review card; social/email/ad copy have one-click Copy buttons since there's no auto-posting integration (by design — text generation only, not channel automation). Verified end-to-end with a disposable DRAFT-status Shopify product (2026-06-30): confirmed `seo`, `descriptionHtml`, `tags`, and photo `alt` all landed correctly, then deleted the test product.
+- 💡 **Not yet built**: no automated posting to social platforms, no email-platform integration (Klaviyo/Shopify Email), no ad-platform integration (Meta/Google Ads API) — explicitly out of scope for now, per the original request.
+
 ## Branding
 
 - ✅ Console rebranded to "UK Stylish Club" (was generic "Store OS" placeholder from the design handoff)

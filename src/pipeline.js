@@ -81,12 +81,32 @@ async function ingestImage(buffer, meta) {
 // Images may be a single product (multiple angles) OR several different
 // products a vendor sent back-to-back — the model must split them, not assume one.
 function analysisPrompt(imageCount) {
-  return `You are a fashion product analyst for a UK menswear store. You are shown ${imageCount} image(s), labelled "Image 0" through "Image ${imageCount - 1}" in that order before each photo.
+  return `You are a fashion product analyst and marketing copywriter for a UK menswear resale store (ukstylishclub.com). You are shown ${imageCount} image(s), labelled "Image 0" through "Image ${imageCount - 1}" in that order before each photo.
 
 These images may show ONE product (e.g. multiple angles of the same item) OR MULTIPLE DIFFERENT products (e.g. a vendor sent several distinct items in one batch). Group images that show the same physical item together; put different items in separate entries. Do not merge unrelated items just because they were sent together.
 
+For each distinct product, also write marketing copy for it: an SEO title and meta description for Google, a short product description, search tags, alt text describing the photo, a social media caption with hashtags, a short marketing email blurb, and ad copy for Meta/Google ads. Keep all copy honest and specific to what's visible — never invent details (material, condition, authenticity) you can't see in the photo.
+
 Return ONLY a valid JSON array, no markdown, with one entry per distinct product:
-[{"imageIndices":[0,1],"productType":"one of [${vendors.PRODUCT_TYPES.map((t) => `"${t}"`).join(',')}] or \"Unknown\"","brand":"visible brand or Unknown","styleName":"model/style name or empty string","colours":["colour1"],"isFootwear":false,"confidence":"high or low","notes":"any flags, e.g. blurry, counterfeit doubt"}]`;
+[{
+  "imageIndices": [0,1],
+  "productType": "one of [${vendors.PRODUCT_TYPES.map((t) => `"${t}"`).join(',')}] or \"Unknown\"",
+  "brand": "visible brand or Unknown",
+  "styleName": "model/style name or empty string",
+  "colours": ["colour1"],
+  "isFootwear": false,
+  "confidence": "high or low",
+  "notes": "any flags, e.g. blurry, counterfeit doubt",
+  "seoTitle": "SEO-optimised product title, max 60 characters",
+  "seoDescription": "SEO meta description, max 160 characters",
+  "descriptionHtml": "2-3 sentence product description, may use <p> and <ul>/<li> tags",
+  "tags": ["keyword1", "keyword2"],
+  "altText": "one sentence describing what's in the photo, for accessibility/SEO",
+  "socialCaption": "short Instagram/TikTok caption with 3-5 relevant hashtags",
+  "emailBlurb": "1-2 sentence promotional snippet for a newsletter",
+  "adHeadline": "short ad headline, max 40 characters",
+  "adPrimaryText": "ad primary text, 1-2 sentences"
+}]`;
 }
 
 // ── batch cycle ────────────────────────────────────────────────────────────────
@@ -139,7 +159,7 @@ async function runBatchCycle() {
         custom_id: customId,
         params: {
           model: MODEL,
-          max_tokens: 1000,
+          max_tokens: 3000, // higher than the bare classification needed — now also generating marketing copy per product
           messages: [{ role: 'user', content }],
         },
       });
@@ -275,13 +295,13 @@ async function pollBatchUntilDone(state) {
       await db.query(
         `INSERT INTO review_queue
            (vendor, title, product_type, collection, colours, sizes, price,
-            confidence, notes, image_hashes, state, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now())`,
+            confidence, notes, image_hashes, state, marketing, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now())`,
         [
           g.vendor, title, type, collection,
           (Array.isArray(a.colours) && a.colours.length ? a.colours : ['Black']).join(', '),
           vendors.sizesFor(type, a.isFootwear),
-          price, confidence, [...g.notes].join('; '), g.hashes, state_,
+          price, confidence, [...g.notes].join('; '), g.hashes, state_, JSON.stringify(a.marketing || {}),
         ]
       );
       (stats.perVendor[g.vendor] ||= { photos: 0, products: 0 }).products += 1;
@@ -307,6 +327,17 @@ function parseAnalyses(text, imageCount) {
     isFootwear: Boolean(p?.isFootwear),
     confidence: p?.confidence === 'high' ? 'high' : 'low',
     notes: String(p?.notes || ''),
+    marketing: {
+      seoTitle: String(p?.seoTitle || ''),
+      seoDescription: String(p?.seoDescription || ''),
+      descriptionHtml: String(p?.descriptionHtml || ''),
+      tags: Array.isArray(p?.tags) ? p.tags.map(String).filter(Boolean) : [],
+      altText: String(p?.altText || ''),
+      socialCaption: String(p?.socialCaption || ''),
+      emailBlurb: String(p?.emailBlurb || ''),
+      adHeadline: String(p?.adHeadline || ''),
+      adPrimaryText: String(p?.adPrimaryText || ''),
+    },
   });
   const fallback = (imageIndices, notes) => ({ ...toItem({}), imageIndices, notes });
   const allIndices = Array.from({ length: imageCount }, (_, i) => i);
