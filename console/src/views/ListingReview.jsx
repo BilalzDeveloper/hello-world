@@ -78,6 +78,8 @@ export default function ListingReview() {
         <ReadyToPublishSection
           items={autoReady}
           duplicateIds={duplicateIds}
+          mergeSelected={mergeSelected}
+          onToggleMerge={(id) => actions.toggleMergeSelect(id)}
           onApproveOne={(id, price) => actions.approveAndPublishListing(id, price)}
           onRejectOne={(id) => actions.rejectListing(id)}
           onApproveAll={() => actions.approveAndPublishAllReady(autoReady.filter((r) => !duplicateIds.has(r.id)).map((r) => r.id))}
@@ -618,7 +620,7 @@ function Thumb({ url, size, height, badge, selected, onToggleSelect, onExpand, i
 // The "85% hands-off" bucket: high confidence, price already auto-filled from
 // price_rules. Nothing here needs editing — just a fast way to see them and
 // either publish everything in one click or peel off one that looks wrong.
-function ReadyToPublishSection({ items, duplicateIds, onApproveOne, onRejectOne, onApproveAll, onOpenLightbox }) {
+function ReadyToPublishSection({ items, duplicateIds, mergeSelected, onToggleMerge, onApproveOne, onRejectOne, onApproveAll, onOpenLightbox }) {
   const [busy, setBusy] = useState(false);
   const safeCount = items.filter((it) => !duplicateIds.has(it.id)).length;
   const flaggedCount = items.length - safeCount;
@@ -654,7 +656,8 @@ function ReadyToPublishSection({ items, duplicateIds, onApproveOne, onRejectOne,
           <span style={{ marginTop: 1, flex: '0 0 auto' }}><AlertCircleIcon size={14} width={2} /></span>
           <span>
             {flaggedCount} item{flaggedCount === 1 ? '' : 's'} below (outlined amber) share the same vendor, price, sizes, and colours as another draft —
-            likely the same item mis-split by the AI. Excluded from "publish all". Check before publishing them individually.
+            likely the same item mis-split by the AI. Excluded from "publish all". Check before publishing them individually, or tick two or
+            more and use "Merge selected" below to combine them into one product (works even across different vendor tags).
           </span>
         </div>
       )}
@@ -664,6 +667,8 @@ function ReadyToPublishSection({ items, duplicateIds, onApproveOne, onRejectOne,
             key={it.id}
             item={it}
             flagged={duplicateIds.has(it.id)}
+            mergeChecked={!!mergeSelected[it.id]}
+            onToggleMerge={() => onToggleMerge(it.id)}
             onApprove={() => onApproveOne(it.id, it.price)}
             onReject={() => onRejectOne(it.id)}
             onOpenLightbox={(i) => onOpenLightbox(it.id, i)}
@@ -674,7 +679,7 @@ function ReadyToPublishSection({ items, duplicateIds, onApproveOne, onRejectOne,
   );
 }
 
-function ReadyRow({ item, flagged, onApprove, onReject, onOpenLightbox }) {
+function ReadyRow({ item, flagged, mergeChecked, onToggleMerge, onApprove, onReject, onOpenLightbox }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const url = (item.imageUrls || [])[0];
@@ -700,6 +705,7 @@ function ReadyRow({ item, flagged, onApprove, onReject, onOpenLightbox }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: `1.5px solid ${flagged ? '#e0b261' : '#e3e3e3'}`, borderRadius: 9, padding: '8px 12px' }}>
+      <MergeCheckbox checked={mergeChecked} onClick={onToggleMerge} />
       <div
         onClick={() => url && onOpenLightbox(0)}
         style={{ width: 40, height: 40, borderRadius: 7, background: '#ededed', overflow: 'hidden', cursor: url ? 'pointer' : 'default', flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

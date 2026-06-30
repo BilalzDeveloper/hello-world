@@ -262,8 +262,11 @@ app.post('/api/review/approve-bulk', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Same vendor's photos the AI split into separate cards but are really one
-// item (e.g. different angles) — combine into a single product.
+// Photos the AI split into separate cards but are really one item (e.g.
+// different angles, or the same item sent through two different vendor
+// chats) — combine into a single product. Cross-vendor merges are allowed:
+// the AI's per-chat vendor tagging is exactly the kind of signal that can be
+// wrong here, and the human picking ids to merge is the actual check.
 app.post('/api/review/merge', async (req, res, next) => {
   try {
     const { ids, keepId } = req.body || {};
@@ -277,10 +280,6 @@ app.post('/api/review/merge', async (req, res, next) => {
     if (rows.length !== ids.length) return res.status(404).json({ error: 'One or more products not found' });
     if (rows.some((r) => r.state === 'published')) {
       return res.status(409).json({ error: 'Cannot merge an already-published product' });
-    }
-    const vendor = rows[0].vendor;
-    if (rows.some((r) => r.vendor !== vendor)) {
-      return res.status(400).json({ error: 'Can only merge products from the same vendor' });
     }
 
     const hashes = [...new Set(rows.flatMap((r) => r.image_hashes || []))];

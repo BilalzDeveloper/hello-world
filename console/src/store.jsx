@@ -123,11 +123,20 @@ function reducer(state, action) {
       return { ...state, mergeSelected };
     }
     case 'MERGE_DONE': {
+      // Server always demotes the kept row to 'needs_review' (combined
+      // photos mean title/price should be re-confirmed), so it belongs in
+      // `listings` now regardless of which list(s) the merged ids came from
+      // — including straight out of `autoReady` if that's where it started.
       const kept = withImageUrls(action.row);
       const otherIds = new Set(action.otherIds);
+      const alreadyInListings = state.listings.some((l) => l.id === kept.id);
       return {
         ...state,
-        listings: state.listings.filter((l) => !otherIds.has(l.id)).map((l) => (l.id === kept.id ? { ...l, ...kept } : l)),
+        listings: state.listings
+          .filter((l) => !otherIds.has(l.id))
+          .map((l) => (l.id === kept.id ? { ...l, ...kept } : l))
+          .concat(alreadyInListings ? [] : [kept]),
+        autoReady: state.autoReady.filter((l) => l.id !== kept.id && !otherIds.has(l.id)),
         mergeSelected: {},
         toast: `Merged into #${kept.id} — set its price/details and approve.`,
       };
