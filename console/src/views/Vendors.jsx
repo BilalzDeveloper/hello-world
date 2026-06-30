@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../store.jsx';
 import { useAuth } from '../auth.jsx';
-import { VENDORS } from '../data/vendors.js';
-import { money, reliabilityColor } from '../lib/format.js';
 import { colorForVendor } from '../lib/vendorColor.js';
 import { PhotoIcon } from '../icons.jsx';
 
 export default function Vendors() {
   const { state, actions } = useStore();
   const { config } = useAuth();
-  const { vendorReqs, vendorReqsStatus, vendorReqsError, activeVendors } = state;
+  const { vendorReqs, vendorReqsStatus, vendorReqsError } = state;
   const vendorOptions = config?.vendors || [];
 
   return (
@@ -26,13 +24,13 @@ export default function Vendors() {
       </h2>
 
       {vendorReqsStatus === 'loading' && (
-        <div style={{ background: '#fff', border: '1px dashed #d8d8d8', borderRadius: 12, padding: 34, textAlign: 'center', color: '#8a8a8a', fontSize: 13, marginBottom: 30 }}>
+        <div style={{ background: '#fff', border: '1px dashed #d8d8d8', borderRadius: 12, padding: 34, textAlign: 'center', color: '#8a8a8a', fontSize: 13 }}>
           Loading vendor requests…
         </div>
       )}
 
       {vendorReqsStatus === 'error' && (
-        <div style={{ background: '#fce9e7', border: '1px solid #f0d4d1', borderRadius: 12, padding: 20, color: '#b3261e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 30 }}>
+        <div style={{ background: '#fce9e7', border: '1px solid #f0d4d1', borderRadius: 12, padding: 20, color: '#b3261e', fontSize: 13, display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ flex: 1 }}>Couldn't load vendor requests: {vendorReqsError}</span>
           <button onClick={actions.reloadVendorRequests} style={{ background: '#fff', border: '1px solid #f0d4d1', borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 600, color: '#b3261e', cursor: 'pointer' }}>
             Retry
@@ -41,7 +39,7 @@ export default function Vendors() {
       )}
 
       {vendorReqsStatus === 'ready' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14, marginBottom: 30 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
           {vendorReqs.map((v) => (
             <VendorRequestCard key={v.tg_chat_id} v={v} vendorOptions={vendorOptions} actions={actions} />
           ))}
@@ -52,41 +50,6 @@ export default function Vendors() {
           )}
         </div>
       )}
-
-      <h2 style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px', letterSpacing: '.2px' }}>Active vendors</h2>
-      <div style={{ background: '#fff', border: '1px solid #e3e3e3', borderRadius: 12, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 18px', borderBottom: '1px solid #ececec', background: '#fafafa', fontSize: 11, fontWeight: 700, letterSpacing: '.4px', color: '#8a8a8a', textTransform: 'uppercase' }}>
-          <div style={{ flex: 1, minWidth: 150 }}>Vendor</div>
-          <div style={{ width: 150 }}>Reliability</div>
-          <div style={{ width: 80 }}>Lead time</div>
-          <div style={{ width: 80, textAlign: 'right' }}>Live</div>
-          <div style={{ width: 104, textAlign: 'right' }}>Payout due</div>
-        </div>
-        {activeVendors.map((v) => {
-          const V = VENDORS[v.key];
-          const rc = reliabilityColor(v.rel);
-          return (
-            <div key={v.key} className="so-row-hover-plain" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderBottom: '1px solid #f1f1f1' }}>
-              <div style={{ flex: 1, minWidth: 150, display: 'flex', alignItems: 'center', gap: 11 }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: V.dot, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: '0 0 auto' }}>{V.short}</span>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1a1a1a' }}>{V.name}</div>
-                  <div style={{ fontSize: 11.5, color: '#9a9a9a' }}>Location · {V.location}</div>
-                </div>
-              </div>
-              <div style={{ width: 150, display: 'flex', alignItems: 'center', gap: 9 }}>
-                <div style={{ flex: 1, height: 6, borderRadius: 4, background: '#eee', overflow: 'hidden' }}>
-                  <div style={{ width: `${v.rel}%`, height: '100%', background: rc, borderRadius: 4 }} />
-                </div>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: rc, fontVariantNumeric: 'tabular-nums', width: 34 }}>{v.rel}%</span>
-              </div>
-              <div style={{ width: 80, fontSize: 13, color: '#6b6b6b' }}>{v.lead}</div>
-              <div style={{ width: 80, textAlign: 'right', fontSize: 13.5, fontWeight: 600, color: '#1a1a1a', fontVariantNumeric: 'tabular-nums' }}>{v.products}</div>
-              <div style={{ width: 104, textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: '#1a1a1a', fontVariantNumeric: 'tabular-nums' }}>{money(v.payout)}</div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

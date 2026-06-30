@@ -71,25 +71,6 @@ export function BoxIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
   );
 }
 
-export function MegaphoneIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
-  return (
-    <svg {...base(size, stroke)} strokeWidth={width}>
-      <path d="M4 10.5v3.2l11.5 4.3V6.2L4 10.5z" />
-      <path d="M15.5 8.2 20 6.3v11.4l-4.5-1.9" />
-      <path d="M6.5 14v3.7a1.5 1.5 0 0 0 3 0" />
-    </svg>
-  );
-}
-
-export function BarChartIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
-  return (
-    <svg {...base(size, stroke)} strokeWidth={width}>
-      <path d="M3 20.5h18" />
-      <path d="M6 20.5v-6M12 20.5V5M18 20.5v-9" />
-    </svg>
-  );
-}
-
 export function ArrowRightIcon({ size = 15, stroke = 'currentColor', width = 2 }) {
   return (
     <svg {...base(size, stroke)} strokeWidth={width}>
@@ -149,6 +130,30 @@ export function XIcon({ size = 13, stroke = 'currentColor', width = 2.4 }) {
   );
 }
 
+export function ChevronLeftIcon({ size = 22, stroke = '#fff', width = 2.2 }) {
+  return (
+    <svg {...base(size, stroke)} strokeWidth={width}>
+      <path d="m15 6-6 6 6 6" />
+    </svg>
+  );
+}
+
+export function ChevronRightIcon({ size = 22, stroke = '#fff', width = 2.2 }) {
+  return (
+    <svg {...base(size, stroke)} strokeWidth={width}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+export function ExpandIcon({ size = 16, stroke = '#fff', width = 2 }) {
+  return (
+    <svg {...base(size, stroke)} strokeWidth={width}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+    </svg>
+  );
+}
+
 export function SortIcon({ size = 15, stroke = '#8a8a8a', width = 1.8 }) {
   return (
     <svg {...base(size, stroke)} strokeWidth={width}>
@@ -169,11 +174,11 @@ export function UsersIcon({ size = 20, stroke = 'currentColor', width = 1.8 }) {
   );
 }
 
-export function PinIcon({ size = 17, stroke = '#9a9a9a', width = 1.7 }) {
+export function GearIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
   return (
     <svg {...base(size, stroke)} strokeWidth={width}>
-      <path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z" />
-      <circle cx="12" cy="10" r="2.5" />
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 13.5a7.4 7.4 0 0 0 0-3l1.9-1.5-2-3.4-2.2.7a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.3a7.4 7.4 0 0 0-2.6 1.5l-2.2-.7-2 3.4 1.9 1.5a7.4 7.4 0 0 0 0 3l-1.9 1.5 2 3.4 2.2-.7a7.4 7.4 0 0 0 2.6 1.5l.5 2.3h4l.5-2.3a7.4 7.4 0 0 0 2.6-1.5l2.2.7 2-3.4z" />
     </svg>
   );
 }

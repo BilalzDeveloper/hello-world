@@ -21,8 +21,8 @@ export default function TopBar() {
           <StorefrontIcon size={17} stroke="#fff" width={1.8} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
-          <span style={{ fontSize: 14.5, fontWeight: 700, letterSpacing: '-.2px' }}>Store&nbsp;OS</span>
-          <span style={{ fontSize: 10, color: '#9a9aa6', fontWeight: 500, letterSpacing: '.3px' }}>RESELLER OPS</span>
+          <span style={{ fontSize: 14.5, fontWeight: 700, letterSpacing: '-.2px' }}>UK&nbsp;Stylish&nbsp;Club</span>
+          <span style={{ fontSize: 10, color: '#9a9aa6', fontWeight: 500, letterSpacing: '.3px' }}>OPS CONSOLE</span>
         </div>
       </div>
 

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Store OS — Reseller Ops Console (manager dashboard for the UKSC pipeline)",
+  "description": "UK Stylish Club — Ops Console (manager dashboard for the UKSC pipeline)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

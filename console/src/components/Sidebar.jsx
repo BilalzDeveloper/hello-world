@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../store.jsx';
-import { HomeIcon, ClipboardCheckIcon, StarIcon, BoxIcon, MegaphoneIcon, BarChartIcon } from '../icons.jsx';
+import { HomeIcon, StarIcon, BoxIcon, GearIcon } from '../icons.jsx';
 
 const navBase = {
   display: 'flex', alignItems: 'center', gap: 11, padding: '9px 11px', borderRadius: 9, cursor: 'pointer',
@@ -32,9 +32,9 @@ function NavItem({ active, onClick, icon, label, badge, badgeColor }) {
 
 export default function Sidebar() {
   const { state, actions } = useStore();
-  const cApprovals = state.orders.length;
   const cListings = state.listings.length;
   const cVendors = state.vendorReqs.length;
+  const pending = cListings + cVendors;
 
   return (
     <nav
@@ -50,10 +50,6 @@ export default function Sidebar() {
 
       <NavItem active={state.screen === 'today'} onClick={() => actions.go('today')} icon={<HomeIcon />} label="Today" badge={0} />
       <NavItem
-        active={state.screen === 'approvals'} onClick={() => actions.go('approvals')} icon={<ClipboardCheckIcon />}
-        label="Order approval" badge={cApprovals} badgeColor="#1a1a1a"
-      />
-      <NavItem
         active={state.screen === 'listings'} onClick={() => actions.go('listings')} icon={<StarIcon />}
         label="Listing review" badge={cListings} badgeColor="#b26b00"
       />
@@ -61,20 +57,15 @@ export default function Sidebar() {
         active={state.screen === 'vendors'} onClick={() => actions.go('vendors')} icon={<BoxIcon />}
         label="Vendors" badge={cVendors} badgeColor="#b26b00"
       />
-      <NavItem active={state.screen === 'catalog'} onClick={() => actions.go('catalog')} icon={<MegaphoneIcon />} label="Daily catalog" badge={0} />
-      <NavItem active={state.screen === 'analytics'} onClick={() => actions.go('analytics')} icon={<BarChartIcon />} label="Analytics" badge={0} />
+      <NavItem active={state.screen === 'settings'} onClick={() => actions.go('settings')} icon={<GearIcon />} label="Settings" badge={0} />
 
       <div style={{ flex: 1 }} />
 
       <div style={{ borderTop: '1px solid #ececec', margin: '8px 4px', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.5px', color: '#9a9a9a', padding: '0 7px' }}>AUTOMATION</div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.5px', color: '#9a9a9a', padding: '0 7px' }}>STATUS</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '2px 7px', fontSize: 12.5, color: '#616161' }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#37b97f', flex: '0 0 auto' }} />
-          <span style={{ flex: 1 }}>85% of the loop is hands-off</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '2px 7px', fontSize: 12.5, color: '#616161' }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: cApprovals ? '#e0b261' : '#37b97f', flex: '0 0 auto' }} />
-          <span style={{ flex: 1 }}>{cApprovals ? `${cApprovals} orders await you` : 'All caught up'}</span>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: pending ? '#e0b261' : '#37b97f', flex: '0 0 auto' }} />
+          <span style={{ flex: 1 }}>{pending ? `${pending} item${pending === 1 ? '' : 's'} need review` : 'All caught up'}</span>
         </div>
       </div>
     </nav>

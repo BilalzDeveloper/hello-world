@@ -31,8 +31,8 @@ export default function LoginScreen() {
             <StorefrontIcon size={18} stroke="#fff" width={1.8} />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a' }}>Store OS</div>
-            <div style={{ fontSize: 10, color: '#9a9aa6', fontWeight: 500, letterSpacing: '.3px' }}>RESELLER OPS</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a' }}>UK Stylish Club</div>
+            <div style={{ fontSize: 10, color: '#9a9aa6', fontWeight: 500, letterSpacing: '.3px' }}>OPS CONSOLE</div>
           </div>
         </div>
         <input

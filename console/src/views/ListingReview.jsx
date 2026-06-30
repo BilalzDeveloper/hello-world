@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { useStore } from '../store.jsx';
+import { useAuth } from '../auth.jsx';
 import { confidenceBadge } from '../lib/format.js';
 import { colorForVendor } from '../lib/vendorColor.js';
-import { BoxIcon, SearchIcon, ChevronDownIcon, SortIcon, XIcon, PhotoIcon, SparkleIcon, AlertCircleIcon } from '../icons.jsx';
+import {
+  BoxIcon, SearchIcon, ChevronDownIcon, SortIcon, XIcon, PhotoIcon, SparkleIcon, AlertCircleIcon, CheckIcon, ExpandIcon,
+} from '../icons.jsx';
+import LovPicker from '../components/LovPicker.jsx';
 
 const SORT_OPTIONS = [
   { v: 'conf-asc', label: 'Low confidence first' },
@@ -17,7 +21,10 @@ const menuRowStyle = (active) => ({
 
 export default function ListingReview() {
   const { state, actions } = useStore();
-  const { listings: allListings, listingsStatus, listingsError, listingVendor, listingSort, openMenu, vendorSearch } = state;
+  const {
+    listings: allListings, autoReady, listingsStatus, listingsError, listingVendor, listingSort, openMenu, vendorSearch,
+    mergeSelected, splitSelections,
+  } = state;
 
   const vals = useMemo(() => {
     const vendorCounts = {};
@@ -39,6 +46,23 @@ export default function ListingReview() {
   const vendorBtnCount = listingVendor === 'all' ? allListings.length : vals.vendorCounts[listingVendor] || 0;
   const isFiltered = listingVendor !== 'all';
   const anyMenuOpen = openMenu === 'vendor' || openMenu === 'sort';
+  const mergeIds = Object.keys(mergeSelected).map(Number).filter((id) => mergeSelected[id]);
+
+  // Same vendor + identical price + identical sizes + identical colours is a
+  // strong signal the AI split one physical item into multiple high-confidence
+  // drafts (e.g. one photo set described 3 different ways) — that combo would
+  // rarely match by coincidence for genuinely different products. Flag those
+  // groups so "Approve & publish all" can't blindly create live duplicates.
+  const duplicateIds = useMemo(() => {
+    const bySig = {};
+    autoReady.forEach((it) => {
+      const sig = [it.vendor, it.price, it.sizes, it.colours].join('|');
+      (bySig[sig] ||= []).push(it.id);
+    });
+    const ids = new Set();
+    Object.values(bySig).forEach((group) => { if (group.length >= 2) group.forEach((id) => ids.add(id)); });
+    return ids;
+  }, [autoReady]);
 
   return (
     <div>
@@ -49,6 +73,17 @@ export default function ListingReview() {
           <strong style={{ color: '#1a1a1a' }}>{allListings.length} drafts from {vals.distinctVendorKeys.length} vendors.</strong>
         </p>
       </div>
+
+      {listingsStatus === 'ready' && autoReady.length > 0 && (
+        <ReadyToPublishSection
+          items={autoReady}
+          duplicateIds={duplicateIds}
+          onApproveOne={(id, price) => actions.approveAndPublishListing(id, price)}
+          onRejectOne={(id) => actions.rejectListing(id)}
+          onApproveAll={() => actions.approveAndPublishAllReady(autoReady.filter((r) => !duplicateIds.has(r.id)).map((r) => r.id))}
+          onOpenLightbox={(id, index) => actions.openLightbox(id, index)}
+        />
+      )}
 
       {listingsStatus === 'loading' && (
         <div style={{ background: '#fff', border: '1px dashed #d8d8d8', borderRadius: 12, padding: 40, textAlign: 'center', color: '#8a8a8a', fontSize: 13 }}>
@@ -137,6 +172,16 @@ export default function ListingReview() {
               )}
             </div>
 
+            {mergeIds.length >= 2 && (
+              <button
+                onClick={() => actions.mergeSelectedListings(mergeIds)}
+                className="so-btn-dark"
+                style={{ background: '#1a1a1a', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 14px', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                🔗 Merge selected ({mergeIds.length})
+              </button>
+            )}
+
             <div style={{ flex: 1 }} />
 
             <span style={{ fontSize: 12.5, color: '#8a8a8a', fontWeight: 600 }}>
@@ -157,8 +202,15 @@ export default function ListingReview() {
               <ListingCard
                 key={l.id}
                 l={l}
+                mergeChecked={!!mergeSelected[l.id]}
+                splitSelected={splitSelections[l.id] || {}}
+                onToggleMerge={() => actions.toggleMergeSelect(l.id)}
+                onToggleSplitHash={(hash) => actions.toggleSplitHash(l.id, hash)}
+                onSplit={() => actions.splitListing(l.id, Object.keys(splitSelections[l.id] || {}))}
+                onOpenLightbox={(index) => actions.openLightbox(l.id, index)}
                 onPublish={(price) => actions.approveAndPublishListing(l.id, price)}
                 onReject={() => actions.rejectListing(l.id)}
+                onUpdateField={(field, value) => actions.updateListingField(l.id, field, value)}
               />
             ))}
 
@@ -185,13 +237,39 @@ export default function ListingReview() {
   );
 }
 
-function ListingCard({ l, onPublish, onReject }) {
+function MergeCheckbox({ checked, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      title="Select to merge with another draft"
+      style={{
+        width: 19, height: 19, borderRadius: 5, border: `1.8px solid ${checked ? '#1a1a1a' : '#cfcfcf'}`, background: checked ? '#1a1a1a' : '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: '0 0 auto',
+      }}
+    >
+      {checked && <CheckIcon size={12} stroke="#fff" width={3.2} />}
+    </div>
+  );
+}
+
+function ListingCard({
+  l, mergeChecked, splitSelected, onToggleMerge, onToggleSplitHash, onSplit, onOpenLightbox,
+  onPublish, onReject, onUpdateField,
+}) {
+  const { config } = useAuth();
   const badge = confidenceBadge(l.confidence);
   const [priceInput, setPriceInput] = useState(l.price ?? '');
+  const [draft, setDraft] = useState({ title: l.title || '', sizes: l.sizes || '', colours: l.colours || '', notes: l.notes || '' });
   const [busy, setBusy] = useState(false);
   const priceValid = priceInput !== '' && Number.isFinite(Number(priceInput)) && Number(priceInput) > 0;
-  const attrs = [l.sizes, l.colours, l.product_type].filter((v) => v && v !== 'Unknown');
   const imageUrls = l.imageUrls || [];
+  const splitCount = Object.keys(splitSelected).length;
+
+  function saveField(field) {
+    const value = draft[field];
+    if (value === (l[field] || '')) return;
+    onUpdateField(field, value);
+  }
 
   async function handlePublish() {
     if (!priceValid || busy) return;
@@ -213,26 +291,52 @@ function ListingCard({ l, onPublish, onReject }) {
     }
   }
 
+  async function handleSplit() {
+    if (!splitCount || busy) return;
+    setBusy(true);
+    try {
+      await onSplit();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const fieldInputStyle = {
+    width: '100%', border: '1px solid transparent', borderRadius: 6, padding: '3px 6px', fontFamily: 'inherit',
+    outline: 'none', background: 'transparent',
+  };
+
   return (
     <div style={{ background: '#fff', border: '1px solid #e3e3e3', borderRadius: 12, padding: 18, display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', gap: 8, flex: '0 0 auto' }}>
-        <div style={{ width: 96, height: 120, borderRadius: 9, background: '#ededed', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-          {imageUrls[0] ? (
-            <img src={imageUrls[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <PhotoIcon size={26} />
-          )}
-          <span style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,.62)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5 }}>
-            {imageUrls.length} photo{imageUrls.length === 1 ? '' : 's'}
-          </span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: '0 0 auto' }}>
+        <MergeCheckbox checked={mergeChecked} onClick={onToggleMerge} />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Thumb url={imageUrls[0]} size={96} height={120} badge={`${imageUrls.length} photo${imageUrls.length === 1 ? '' : 's'}`}
+            selected={!!splitSelected[l.image_hashes?.[0]]} onToggleSelect={() => onToggleSplitHash(l.image_hashes?.[0])}
+            onExpand={() => onOpenLightbox(0)} iconSize={26} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[1, 2].map((i) => (
+              <Thumb key={i} url={imageUrls[i]} size={56} height={56}
+                selected={!!splitSelected[l.image_hashes?.[i]]} onToggleSelect={() => onToggleSplitHash(l.image_hashes?.[i])}
+                onExpand={() => onOpenLightbox(i)} iconSize={18} iconWidth={1.6} />
+            ))}
+          </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[imageUrls[1], imageUrls[2]].map((u, i) => (
-            <div key={i} style={{ width: 56, height: 56, borderRadius: 8, background: '#ededed', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              {u ? <img src={u} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PhotoIcon size={18} width={1.6} />}
-            </div>
-          ))}
-        </div>
+        {imageUrls.length > 3 && (
+          <div onClick={() => onOpenLightbox(3)} style={{ fontSize: 11, color: '#4b53b5', fontWeight: 600, cursor: 'pointer', textAlign: 'center' }}>
+            +{imageUrls.length - 3} more
+          </div>
+        )}
+        {splitCount > 0 && (
+          <button
+            onClick={handleSplit}
+            disabled={busy}
+            className="so-publish-btn"
+            style={{ background: '#eef0fb', color: '#4b53b5', border: 'none', borderRadius: 8, padding: '7px 8px', fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700, cursor: busy ? 'default' : 'pointer' }}
+          >
+            ✂ Split {splitCount} into new draft
+          </button>
+        )}
       </div>
 
       <div style={{ flex: 1, minWidth: 240, display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -244,13 +348,23 @@ function ListingCard({ l, onPublish, onReject }) {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#4b53b5', background: '#eef0fb', padding: '3px 9px', borderRadius: 6 }}>
             <SparkleIcon />AI draft
           </span>
+          {l.product_type && l.product_type !== 'Unknown' && (
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: '#52525b', background: '#f3f3f4', border: '1px solid #e8e8e8', padding: '3px 9px', borderRadius: 6 }}>{l.product_type}</span>
+          )}
         </div>
-        <h3 style={{ margin: 0, fontSize: 16.5, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-.2px' }}>{l.title}</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 1 }}>
-          {attrs.map((t, i) => (
-            <span key={i} style={{ fontSize: 11.5, fontWeight: 600, color: '#52525b', background: '#f3f3f4', border: '1px solid #e8e8e8', padding: '3px 9px', borderRadius: 6 }}>{t}</span>
-          ))}
+
+        <input
+          value={draft.title}
+          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          onBlur={() => saveField('title')}
+          style={{ ...fieldInputStyle, fontSize: 16.5, fontWeight: 700, color: '#1a1a1a', letterSpacing: '-.2px', padding: '2px 6px', marginLeft: -6 }}
+        />
+
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <LabeledField label="Sizes" value={draft.sizes} onChange={(v) => setDraft((d) => ({ ...d, sizes: v }))} onBlur={() => saveField('sizes')} />
+          <LabeledField label="Colours" value={draft.colours} onChange={(v) => setDraft((d) => ({ ...d, colours: v }))} onBlur={() => saveField('colours')} />
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 3 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 700, color: badge.color, background: badge.bg, padding: '4px 10px', borderRadius: 999 }}>
             {badge.label}
@@ -259,15 +373,31 @@ function ListingCard({ l, onPublish, onReject }) {
             <span style={{ fontSize: 11.5, fontWeight: 700, color: '#b3261e', background: '#fce9e7', padding: '4px 10px', borderRadius: 999 }}>Publish failed — retry</span>
           )}
         </div>
-        {l.notes && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, color: '#9a5b00', background: '#fbf1dd', padding: '7px 11px', borderRadius: 8, marginTop: 2, fontWeight: 500 }}>
-            <AlertCircleIcon />
-            {l.notes}
-          </div>
-        )}
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: '#9a5b00', background: '#fbf1dd', padding: '7px 11px', borderRadius: 8, marginTop: 2, fontWeight: 500 }}>
+          <span style={{ marginTop: 2, flex: '0 0 auto' }}><AlertCircleIcon /></span>
+          <textarea
+            value={draft.notes}
+            onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+            onBlur={() => saveField('notes')}
+            placeholder="No notes from the AI — add one if useful"
+            rows={1}
+            style={{ ...fieldInputStyle, color: '#9a5b00', resize: 'vertical', fontSize: 12, lineHeight: 1.4, padding: '2px 4px' }}
+          />
+        </div>
       </div>
 
-      <div style={{ flex: '0 0 196px', display: 'flex', flexDirection: 'column', gap: 11, borderLeft: '1px solid #f0f0f0', paddingLeft: 18 }}>
+      <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', gap: 11, borderLeft: '1px solid #f0f0f0', paddingLeft: 18 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.4px', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 6 }}>Collection</div>
+          <LovPicker
+            value={l.collection && !l.collection.includes('⚠️') ? l.collection : ''}
+            options={config?.collections || []}
+            onChange={(v) => onUpdateField('collection', v)}
+            placeholder="Pick a collection…"
+            width={280}
+          />
+        </div>
         <div style={{ background: '#fafafa', border: '1px solid #eee', borderRadius: 9, padding: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.4px', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 8 }}>Sell price</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -304,6 +434,184 @@ function ListingCard({ l, onPublish, onReject }) {
           Reject
         </button>
       </div>
+    </div>
+  );
+}
+
+function LabeledField({ label, value, onChange, onBlur }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.4px', color: '#9a9a9a', textTransform: 'uppercase' }}>{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        style={{
+          border: '1px solid #e8e8e8', borderRadius: 6, padding: '4px 7px', fontFamily: 'inherit', fontSize: 12.5,
+          color: '#3a3a3a', outline: 'none', background: '#fafafa', minWidth: 140,
+        }}
+      />
+    </div>
+  );
+}
+
+function Thumb({ url, size, height, badge, selected, onToggleSelect, onExpand, iconSize, iconWidth }) {
+  return (
+    <div
+      style={{
+        width: size, height, borderRadius: size > 60 ? 9 : 8, background: '#ededed', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', position: 'relative', overflow: 'hidden', cursor: url ? 'pointer' : 'default',
+        outline: selected ? '2.5px solid #4b53b5' : 'none', outlineOffset: -2.5,
+      }}
+      onClick={url ? onExpand : undefined}
+    >
+      {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PhotoIcon size={iconSize} width={iconWidth} />}
+      {url && (
+        <div
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+          title="Select for splitting out"
+          style={{
+            position: 'absolute', top: 4, left: 4, width: 17, height: 17, borderRadius: 4,
+            border: `1.6px solid ${selected ? '#4b53b5' : 'rgba(255,255,255,.85)'}`, background: selected ? '#4b53b5' : 'rgba(0,0,0,.28)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {selected && <CheckIcon size={10} stroke="#fff" width={3.4} />}
+        </div>
+      )}
+      {url && (
+        <div
+          onClick={(e) => { e.stopPropagation(); onExpand(); }}
+          style={{ position: 'absolute', bottom: 4, right: 4, width: 18, height: 18, borderRadius: 5, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ExpandIcon size={11} width={2} />
+        </div>
+      )}
+      {badge && (
+        <span style={{ position: 'absolute', bottom: 6, left: 6, right: 26, background: 'rgba(0,0,0,.62)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// The "85% hands-off" bucket: high confidence, price already auto-filled from
+// price_rules. Nothing here needs editing — just a fast way to see them and
+// either publish everything in one click or peel off one that looks wrong.
+function ReadyToPublishSection({ items, duplicateIds, onApproveOne, onRejectOne, onApproveAll, onOpenLightbox }) {
+  const [busy, setBusy] = useState(false);
+  const safeCount = items.filter((it) => !duplicateIds.has(it.id)).length;
+  const flaggedCount = items.length - safeCount;
+
+  async function handleApproveAll() {
+    if (busy || !safeCount) return;
+    setBusy(true);
+    try {
+      await onApproveAll();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ background: '#f7faf8', border: '1px solid #cfe8da', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#0a7a52' }}>✓ Ready to publish ({items.length})</div>
+          <div style={{ fontSize: 12.5, color: '#5a8a72' }}>High confidence, price auto-filled — review or just publish them all.</div>
+        </div>
+        <button
+          onClick={handleApproveAll}
+          disabled={busy || !safeCount}
+          className="so-publish-btn"
+          style={{ background: '#0c8a5f', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: busy || !safeCount ? 'default' : 'pointer', opacity: !safeCount ? 0.5 : 1 }}
+        >
+          {busy ? 'Publishing…' : `Approve & publish all (${safeCount})`}
+        </button>
+      </div>
+      {flaggedCount > 0 && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12.5, color: '#9a5b00', background: '#fbf1dd', padding: '9px 12px', borderRadius: 8, marginBottom: 10, fontWeight: 500 }}>
+          <span style={{ marginTop: 1, flex: '0 0 auto' }}><AlertCircleIcon size={14} width={2} /></span>
+          <span>
+            {flaggedCount} item{flaggedCount === 1 ? '' : 's'} below (outlined amber) share the same vendor, price, sizes, and colours as another draft —
+            likely the same item mis-split by the AI. Excluded from "publish all". Check before publishing them individually.
+          </span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {items.map((it) => (
+          <ReadyRow
+            key={it.id}
+            item={it}
+            flagged={duplicateIds.has(it.id)}
+            onApprove={() => onApproveOne(it.id, it.price)}
+            onReject={() => onRejectOne(it.id)}
+            onOpenLightbox={(i) => onOpenLightbox(it.id, i)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReadyRow({ item, flagged, onApprove, onReject, onOpenLightbox }) {
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const url = (item.imageUrls || [])[0];
+  const hasCollection = item.collection && !item.collection.includes('⚠️');
+
+  async function run(fn) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handlePublishClick() {
+    if (flagged && !confirming) {
+      setConfirming(true);
+      return;
+    }
+    run(onApprove);
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: `1.5px solid ${flagged ? '#e0b261' : '#e3e3e3'}`, borderRadius: 9, padding: '8px 12px' }}>
+      <div
+        onClick={() => url && onOpenLightbox(0)}
+        style={{ width: 40, height: 40, borderRadius: 7, background: '#ededed', overflow: 'hidden', cursor: url ? 'pointer' : 'default', flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PhotoIcon size={16} width={1.6} />}
+      </div>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: colorForVendor(item.vendor), flex: '0 0 auto' }} />
+      <div style={{ flex: 1, minWidth: 160 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{item.title}</div>
+        <div style={{ fontSize: 11.5, color: '#8a8a8a' }}>{item.vendor} · {hasCollection ? item.collection : 'No collection set'}</div>
+      </div>
+      {flagged && (
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#9a5b00', background: '#fbf1dd', padding: '3px 8px', borderRadius: 999 }}>Possible duplicate</span>
+      )}
+      <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontVariantNumeric: 'tabular-nums' }}>£{Number(item.price).toFixed(2)}</div>
+      <button
+        onClick={handlePublishClick}
+        disabled={busy}
+        className="so-publish-btn"
+        style={{ background: confirming ? '#b26b00' : '#0c8a5f', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 11px', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer' }}
+      >
+        {confirming ? 'Publish anyway?' : 'Publish'}
+      </button>
+      <button
+        onClick={() => run(onReject)}
+        disabled={busy}
+        className="so-reject-btn"
+        style={{ background: '#fff', color: '#b3261e', border: '1px solid #f0d4d1', borderRadius: 7, padding: '6px 10px', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: busy ? 'default' : 'pointer' }}
+      >
+        Reject
+      </button>
     </div>
   );
 }

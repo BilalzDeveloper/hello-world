@@ -28,4 +28,10 @@ export const api = {
   publish: (ids) => request('/api/publish', { method: 'POST', json: { ids } }),
   getUnmappedChats: () => request('/api/chats/unmapped'),
   mapChat: (chatId, vendor) => request('/api/chats/map', { method: 'POST', json: { chatId, vendor } }),
+  getCollectionRules: () => request('/api/collection-rules'),
+  putCollectionRules: (rules) => request('/api/collection-rules', { method: 'PUT', json: { rules } }),
+  mergeReview: (ids, keepId) => request('/api/review/merge', { method: 'POST', json: { ids, keepId } }),
+  splitReview: (id, hashes) => request(`/api/review/${id}/split`, { method: 'POST', json: { hashes } }),
+  approveBulk: (ids) => request('/api/review/approve-bulk', { method: 'POST', json: { ids } }),
+  getAiUsage: () => request('/api/ai-usage'),
 };

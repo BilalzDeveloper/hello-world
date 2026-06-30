@@ -5,22 +5,17 @@ import LoginScreen from './components/LoginScreen.jsx';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Toast from './components/Toast.jsx';
-import OrderDrawer from './components/OrderDrawer.jsx';
-import StickyApproveBar from './components/StickyApproveBar.jsx';
+import Lightbox from './components/Lightbox.jsx';
 import Today from './views/Today.jsx';
-import OrderApproval from './views/OrderApproval.jsx';
 import ListingReview from './views/ListingReview.jsx';
 import Vendors from './views/Vendors.jsx';
-import DailyCatalog from './views/DailyCatalog.jsx';
-import Analytics from './views/Analytics.jsx';
+import Settings from './views/Settings.jsx';
 
 const SCREENS = {
   today: Today,
-  approvals: OrderApproval,
   listings: ListingReview,
   vendors: Vendors,
-  catalog: DailyCatalog,
-  analytics: Analytics,
+  settings: Settings,
 };
 
 function Shell() {
@@ -36,11 +31,10 @@ function Shell() {
           <div style={{ maxWidth: 1160, margin: '0 auto', padding: '28px 34px 64px' }}>
             <View />
           </div>
-          <StickyApproveBar />
         </main>
       </div>
-      <OrderDrawer />
       <Toast />
+      <Lightbox />
     </div>
   );
 }
