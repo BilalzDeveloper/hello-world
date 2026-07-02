@@ -1,0 +1,19 @@
+{
+  "name": "UK Stylish Club — Ops Console",
+  "short_name": "UKSC Ops",
+  "description": "Operations console — manage listings, vendors, and publishing.",
+  "start_url": "/console/",
+  "scope": "/console/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/console/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
