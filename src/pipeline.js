@@ -409,4 +409,4 @@ function startCron() {
   }
 }
 
-module.exports = { ingestImage, runBatchCycle, startCron };
+module.exports = { ingestImage, runBatchCycle, startCron, isCycleRunning: () => cycleRunning };

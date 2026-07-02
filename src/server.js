@@ -525,9 +525,24 @@ app.get('/api/images/:hash', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// ── dev helpers ────────────────────────────────────────────────────────────────
-app.post('/api/dev/run-pipeline', async (_req, res, next) => {
-  try { res.json(await pipeline.runBatchCycle()); } catch (e) { next(e); }
+// ── pipeline manual trigger ────────────────────────────────────────────────────
+// Fire-and-forget: responds immediately so the browser doesn't time out
+// waiting for the full Anthropic batch cycle (can take 30-120 seconds).
+app.post('/api/pipeline/trigger', async (_req, res, next) => {
+  try {
+    if (pipeline.isCycleRunning()) return res.json({ status: 'already_running' });
+    const { rows } = await db.query(`SELECT COUNT(*)::int AS n FROM images WHERE status = 'pending_analysis'`);
+    if (!rows[0].n) return res.json({ status: 'nothing_pending' });
+    pipeline.runBatchCycle().catch((e) => console.error('manual trigger error:', e.message));
+    res.json({ status: 'started', pending: rows[0].n });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/pipeline/status', async (_req, res, next) => {
+  try {
+    const { rows } = await db.query(`SELECT COUNT(*)::int AS n FROM images WHERE status = 'pending_analysis'`);
+    res.json({ running: pipeline.isCycleRunning(), pendingPhotos: rows[0].n });
+  } catch (e) { next(e); }
 });
 
 // ── static frontend ────────────────────────────────────────────────────────────

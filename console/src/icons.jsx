@@ -174,6 +174,15 @@ export function UsersIcon({ size = 20, stroke = 'currentColor', width = 1.8 }) {
   );
 }
 
+export function RefreshIcon({ size = 18, stroke = 'currentColor', width = 1.8 }) {
+  return (
+    <svg {...base(size, stroke)} strokeWidth={width}>
+      <path d="M20 10.5A8.5 8.5 0 1 0 17.5 17" />
+      <polyline points="20 4 20 10.5 13.5 10.5" />
+    </svg>
+  );
+}
+
 export function GearIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
   return (
     <svg {...base(size, stroke)} strokeWidth={width}>

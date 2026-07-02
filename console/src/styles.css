@@ -128,3 +128,7 @@ button {
 .so-approve-btn:hover {
   filter: brightness(0.94);
 }
+
+@keyframes uksc-spin {
+  to { transform: rotate(360deg); }
+}

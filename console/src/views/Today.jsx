@@ -1,11 +1,22 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStore } from '../store.jsx';
 import { MANAGER_NAME } from '../config.js';
-import { ClipboardCheckIcon, UsersIcon, ArrowRightIcon, CheckIcon } from '../icons.jsx';
+import { ClipboardCheckIcon, UsersIcon, ArrowRightIcon, CheckIcon, RefreshIcon } from '../icons.jsx';
 
 export default function Today() {
   const { state, actions } = useStore();
   const { listings, autoReady, vendorReqs } = state;
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSync() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await actions.triggerPipeline();
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const vals = useMemo(
     () => ({
@@ -24,7 +35,26 @@ export default function Today() {
         <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.5px', margin: 0, color: '#1a1a1a' }}>Good morning, {MANAGER_NAME}</h1>
       </div>
 
-      <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: '0 0 13px', letterSpacing: '-.2px' }}>Needs your attention</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 13px' }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', margin: 0, letterSpacing: '-.2px', flex: 1 }}>Needs your attention</h2>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          title="Check Telegram for new photos now"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: '#fff', border: '1px solid #e3e3e3', borderRadius: 8,
+            padding: '7px 12px', cursor: syncing ? 'default' : 'pointer',
+            fontSize: 12.5, fontWeight: 600, color: syncing ? '#9a9a9a' : '#1a1a1a',
+            opacity: syncing ? 0.7 : 1,
+          }}
+        >
+          <span style={{ display: 'inline-flex', animation: syncing ? 'uksc-spin 0.9s linear infinite' : 'none' }}>
+            <RefreshIcon size={14} stroke="currentColor" width={2.2} />
+          </span>
+          {syncing ? 'Checking…' : 'Check now'}
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
         {autoReady.length > 0 && (
           <AttentionCard

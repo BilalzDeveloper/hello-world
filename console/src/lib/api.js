@@ -34,4 +34,5 @@ export const api = {
   splitReview: (id, hashes) => request(`/api/review/${id}/split`, { method: 'POST', json: { hashes } }),
   approveBulk: (ids) => request('/api/review/approve-bulk', { method: 'POST', json: { ids } }),
   getAiUsage: () => request('/api/ai-usage'),
+  triggerPipeline: () => request('/api/pipeline/trigger', { method: 'POST' }),
 };

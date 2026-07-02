@@ -326,6 +326,20 @@ export function StoreProvider({ children }) {
         }
       },
 
+      triggerPipeline: async () => {
+        try {
+          const result = await api.triggerPipeline();
+          const msg = result.status === 'already_running'
+            ? 'Already checking — please wait a moment.'
+            : result.status === 'nothing_pending'
+            ? 'All caught up — no photos waiting for analysis.'
+            : `Checking ${result.pending} photo${result.pending === 1 ? '' : 's'} — new listings will appear shortly.`;
+          dispatch({ type: 'SHOW_TOAST', message: msg });
+        } catch (e) {
+          dispatch({ type: 'SHOW_TOAST', message: e.message });
+        }
+      },
+
       approveVendorRequest: async (tgChatId, vendorCode) => {
         try {
           await api.mapChat(tgChatId, vendorCode);
