@@ -1,14 +1,16 @@
 import React from 'react';
 import { StorefrontIcon, SearchIcon, BellIcon } from '../icons.jsx';
 import { MANAGER_NAME } from '../config.js';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 export default function TopBar() {
+  const isMobile = useIsMobile();
   const initial = MANAGER_NAME.charAt(0).toUpperCase();
   return (
     <header
       style={{
-        height: 56, flex: '0 0 auto', background: '#1a1a1a', display: 'flex', alignItems: 'center',
-        gap: 16, padding: '0 18px 0 16px', color: '#fff', zIndex: 30,
+        height: 52, flex: '0 0 auto', background: '#1a1a1a', display: 'flex', alignItems: 'center',
+        gap: 16, padding: '0 14px 0 14px', color: '#fff', zIndex: 30,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -26,37 +28,38 @@ export default function TopBar() {
         </div>
       </div>
 
-      <div
-        style={{
-          flex: '0 1 420px', display: 'flex', alignItems: 'center', gap: 8, background: '#2c2c2e',
-          border: '1px solid #3a3a3c', borderRadius: 9, padding: '0 11px', height: 34, color: '#a6a6ad', marginLeft: 6,
-        }}
-      >
-        <SearchIcon size={15} stroke="currentColor" width={1.9} />
-        <span style={{ fontSize: 13 }}>Search orders, vendors, products…</span>
-      </div>
+      {!isMobile && (
+        <div
+          style={{
+            flex: '0 1 420px', display: 'flex', alignItems: 'center', gap: 8, background: '#2c2c2e',
+            border: '1px solid #3a3a3c', borderRadius: 9, padding: '0 11px', height: 34, color: '#a6a6ad', marginLeft: 6,
+          }}
+        >
+          <SearchIcon size={15} stroke="currentColor" width={1.9} />
+          <span style={{ fontSize: 13 }}>Search orders, vendors, products…</span>
+        </div>
+      )}
 
       <div style={{ flex: 1 }} />
 
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 7, background: '#13301f', border: '1px solid #1d5236',
-          color: '#5fd39a', borderRadius: 999, padding: '5px 11px 5px 9px', fontSize: 12, fontWeight: 600,
-        }}
-      >
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#37d180', boxShadow: '0 0 0 3px rgba(55,209,128,.18)' }} />
-        Loop running
-      </div>
+      {!isMobile && (
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', gap: 7, background: '#13301f', border: '1px solid #1d5236',
+            color: '#5fd39a', borderRadius: 999, padding: '5px 11px 5px 9px', fontSize: 12, fontWeight: 600,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#37d180', boxShadow: '0 0 0 3px rgba(55,209,128,.18)' }} />
+          Loop running
+        </div>
+      )}
 
-      <div
-        className="so-icon-btn"
-        style={{
-          width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#c4c4cc', cursor: 'pointer',
-        }}
-      >
-        <BellIcon size={18} stroke="currentColor" width={1.7} />
-      </div>
+      {isMobile && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: '#5fd39a' }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#37d180', boxShadow: '0 0 0 3px rgba(55,209,128,.18)', flex: '0 0 auto' }} />
+          Live
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, paddingLeft: 4 }}>
         <div

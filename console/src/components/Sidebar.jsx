@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../store.jsx';
 import { HomeIcon, StarIcon, BoxIcon, GearIcon } from '../icons.jsx';
+import { useIsMobile } from '../lib/useIsMobile.js';
 
 const navBase = {
   display: 'flex', alignItems: 'center', gap: 11, padding: '9px 11px', borderRadius: 9, cursor: 'pointer',
@@ -32,9 +33,12 @@ function NavItem({ active, onClick, icon, label, badge, badgeColor }) {
 
 export default function Sidebar() {
   const { state, actions } = useStore();
+  const isMobile = useIsMobile();
   const cListings = state.listings.length;
   const cVendors = state.vendorReqs.length;
   const pending = cListings + cVendors;
+
+  if (isMobile) return null;
 
   return (
     <nav

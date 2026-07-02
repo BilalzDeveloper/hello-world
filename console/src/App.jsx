@@ -4,12 +4,14 @@ import { StoreProvider, useStore } from './store.jsx';
 import LoginScreen from './components/LoginScreen.jsx';
 import TopBar from './components/TopBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
+import BottomNav from './components/BottomNav.jsx';
 import Toast from './components/Toast.jsx';
 import Lightbox from './components/Lightbox.jsx';
 import Today from './views/Today.jsx';
 import ListingReview from './views/ListingReview.jsx';
 import Vendors from './views/Vendors.jsx';
 import Settings from './views/Settings.jsx';
+import { useIsMobile } from './lib/useIsMobile.js';
 
 const SCREENS = {
   today: Today,
@@ -20,6 +22,7 @@ const SCREENS = {
 
 function Shell() {
   const { state } = useStore();
+  const isMobile = useIsMobile();
   const View = SCREENS[state.screen] || Today;
 
   return (
@@ -28,11 +31,17 @@ function Shell() {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Sidebar />
         <main style={{ flex: 1, overflowY: 'auto', minWidth: 0, position: 'relative' }}>
-          <div style={{ maxWidth: 1160, margin: '0 auto', padding: '28px 34px 64px' }}>
+          <div style={{
+            maxWidth: 1160, margin: '0 auto',
+            padding: isMobile
+              ? '16px 14px calc(72px + env(safe-area-inset-bottom, 0px))'
+              : '28px 34px 64px',
+          }}>
             <View />
           </div>
         </main>
       </div>
+      {isMobile && <BottomNav />}
       <Toast />
       <Lightbox />
     </div>
