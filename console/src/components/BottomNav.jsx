@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../store.jsx';
-import { HomeIcon, StarIcon, BoxIcon, GearIcon } from '../icons.jsx';
+import { HomeIcon, StarIcon, BoxIcon, GearIcon, HelpCircleIcon } from '../icons.jsx';
 
 export default function BottomNav() {
   const { state, actions } = useStore();
@@ -12,6 +12,7 @@ export default function BottomNav() {
     { screen: 'listings', icon: <StarIcon size={22} />, label: 'Listings', badge: cListings },
     { screen: 'vendors',  icon: <BoxIcon  size={22} />, label: 'Vendors',  badge: cVendors },
     { screen: 'settings', icon: <GearIcon size={22} />, label: 'Settings' },
+    { screen: 'guide',    icon: <HelpCircleIcon size={22} />, label: 'Guide' },
   ];
 
   return (

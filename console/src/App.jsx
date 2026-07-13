@@ -11,6 +11,7 @@ import Today from './views/Today.jsx';
 import ListingReview from './views/ListingReview.jsx';
 import Vendors from './views/Vendors.jsx';
 import Settings from './views/Settings.jsx';
+import Guide from './views/Guide.jsx';
 import { useIsMobile } from './lib/useIsMobile.js';
 
 const SCREENS = {
@@ -18,6 +19,7 @@ const SCREENS = {
   listings: ListingReview,
   vendors: Vendors,
   settings: Settings,
+  guide: Guide,
 };
 
 function Shell() {

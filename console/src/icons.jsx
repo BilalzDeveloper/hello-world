@@ -191,3 +191,13 @@ export function GearIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
     </svg>
   );
 }
+
+export function HelpCircleIcon({ size = 18, stroke = 'currentColor', width = 1.7 }) {
+  return (
+    <svg {...base(size, stroke)} strokeWidth={width}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.4 9.3a2.7 2.7 0 1 1 3.9 2.4c-1 .5-1.5 1.1-1.5 2.1" />
+      <path d="M11.8 17v.15" />
+    </svg>
+  );
+}

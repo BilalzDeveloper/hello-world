@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../store.jsx';
-import { HomeIcon, StarIcon, BoxIcon, GearIcon } from '../icons.jsx';
+import { HomeIcon, StarIcon, BoxIcon, GearIcon, HelpCircleIcon } from '../icons.jsx';
 import { useIsMobile } from '../lib/useIsMobile.js';
 
 const navBase = {
@@ -62,6 +62,9 @@ export default function Sidebar() {
         label="Vendors" badge={cVendors} badgeColor="#b26b00"
       />
       <NavItem active={state.screen === 'settings'} onClick={() => actions.go('settings')} icon={<GearIcon />} label="Settings" badge={0} />
+
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.6px', color: '#9a9a9a', padding: '14px 11px 8px' }}>HELP</div>
+      <NavItem active={state.screen === 'guide'} onClick={() => actions.go('guide')} icon={<HelpCircleIcon />} label="User guide" badge={0} />
 
       <div style={{ flex: 1 }} />
 
