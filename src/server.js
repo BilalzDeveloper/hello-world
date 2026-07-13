@@ -359,10 +359,27 @@ app.get('/api/chats/unmapped', async (_req, res, next) => {
        FROM vendor_chats vc
        LEFT JOIN (SELECT tg_chat_id, COUNT(*)::int AS n FROM images GROUP BY tg_chat_id) i
          ON i.tg_chat_id = vc.tg_chat_id
-       WHERE vc.vendor IS NULL
+       WHERE vc.vendor IS NULL AND COALESCE(vc.is_worker, false) = false
        ORDER BY image_count DESC`
     );
     res.json(rows.map((r) => ({ ...r, tg_chat_id: String(r.tg_chat_id) })));
+  } catch (e) { next(e); }
+});
+
+// A worker chat sends photos on a vendor's behalf, with the vendor declared
+// per-batch (see userbot.js openWorkerBatch) rather than mapped to the chat —
+// so this only flips is_worker, leaving vendor untouched (NULL).
+app.post('/api/chats/worker', async (req, res, next) => {
+  try {
+    const chatId = String(req.body?.chatId || '');
+    if (!/^-?\d+$/.test(chatId)) return res.status(400).json({ error: 'Bad chatId' });
+    await db.query(
+      `INSERT INTO vendor_chats (tg_chat_id, is_worker, mapped_at)
+       VALUES ($1, true, now())
+       ON CONFLICT (tg_chat_id) DO UPDATE SET is_worker = true`,
+      [chatId]
+    );
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });
 

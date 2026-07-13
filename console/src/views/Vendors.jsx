@@ -79,6 +79,16 @@ function VendorRequestCard({ v, vendorOptions, actions }) {
     }
   }
 
+  async function markWorker() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await actions.markWorkerChat(v.tg_chat_id);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ background: '#fff', border: '1px solid #e3e3e3', borderRadius: 12, padding: 17, display: 'flex', flexDirection: 'column', gap: 13 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
@@ -123,6 +133,14 @@ function VendorRequestCard({ v, vendorOptions, actions }) {
           Reject
         </button>
       </div>
+      <button
+        onClick={markWorker}
+        disabled={busy}
+        style={{ background: '#fff', color: '#3a5b8f', border: '1px solid #d6e0f0', borderRadius: 8, padding: '9px 10px', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, cursor: busy ? 'default' : 'pointer' }}
+        title="This chat is a UKSC worker sending batches on behalf of vendors — treat their leading text messages as batch instructions instead of asking for a vendor mapping."
+      >
+        Mark as worker chat
+      </button>
     </div>
   );
 }

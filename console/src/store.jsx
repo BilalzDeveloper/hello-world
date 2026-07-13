@@ -358,6 +358,15 @@ export function StoreProvider({ children }) {
           dispatch({ type: 'SHOW_TOAST', message: e.message });
         }
       },
+      markWorkerChat: async (tgChatId) => {
+        try {
+          await api.markWorkerChat(tgChatId);
+          dispatch({ type: 'VENDOR_REQ_REMOVED', tgChatId });
+          dispatch({ type: 'SHOW_TOAST', message: 'Marked as a worker chat — its instruction messages will open batches.' });
+        } catch (e) {
+          dispatch({ type: 'SHOW_TOAST', message: e.message });
+        }
+      },
     }),
     []
   );

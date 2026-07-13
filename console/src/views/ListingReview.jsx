@@ -394,6 +394,12 @@ function ListingCard({
           )}
         </div>
 
+        {l.worker_note && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: '#3a5b8f', background: '#eef2fb', padding: '7px 11px', borderRadius: 8, marginTop: 2, fontWeight: 500 }}>
+            <span style={{ flex: 1 }}><strong>Worker note:</strong> {l.worker_note}</span>
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12, color: '#9a5b00', background: '#fbf1dd', padding: '7px 11px', borderRadius: 8, marginTop: 2, fontWeight: 500 }}>
           <span style={{ marginTop: 2, flex: '0 0 auto' }}><AlertCircleIcon /></span>
           <textarea
@@ -810,6 +816,12 @@ function ReadyRow({ item, flagged, mergeChecked, onToggleMerge, onApprove, onRej
             />
           </div>
           <LabeledField label="Notes" wide value={draft.notes} onChange={(v) => setDraft((d) => ({ ...d, notes: v }))} onBlur={() => saveField('notes')} />
+          {item.worker_note && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: '1 1 100%' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.4px', color: '#9a9a9a', textTransform: 'uppercase' }}>Worker note</span>
+              <span style={{ fontSize: 12.5, color: '#3a5b8f' }}>{item.worker_note}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

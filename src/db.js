@@ -67,6 +67,18 @@ CREATE TABLE IF NOT EXISTS vendor_chats (
   mapped_at    TIMESTAMPTZ DEFAULT now()
 );
 
+-- A worker-declared batch: one leading text message ("instructions") that a
+-- run of photos from a worker chat gets attached to. See userbot.js
+-- openBatches / vendor_chats.is_worker.
+CREATE TABLE IF NOT EXISTS batches (
+  id            SERIAL PRIMARY KEY,
+  tg_chat_id    BIGINT,
+  vendor        TEXT,
+  instructions  TEXT,
+  started_at    TIMESTAMPTZ DEFAULT now(),
+  last_photo_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS price_rules (
   product_type TEXT PRIMARY KEY,
   price        NUMERIC
@@ -114,6 +126,13 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage(created_at);
 // review_queue table that already exists in deployed databases.
 const MIGRATIONS = [
   `ALTER TABLE review_queue ADD COLUMN IF NOT EXISTS marketing JSONB`,
+  // Worker-submitted batches: a chat flagged is_worker treats a leading
+  // text-only message as instructions for the photos that follow (batches
+  // table above), which get tagged onto images.batch_id and surfaced back
+  // on the resulting listing as review_queue.worker_note.
+  `ALTER TABLE vendor_chats ADD COLUMN IF NOT EXISTS is_worker BOOLEAN DEFAULT false`,
+  `ALTER TABLE images ADD COLUMN IF NOT EXISTS batch_id INT REFERENCES batches(id)`,
+  `ALTER TABLE review_queue ADD COLUMN IF NOT EXISTS worker_note TEXT`,
 ];
 
 async function bootstrap() {

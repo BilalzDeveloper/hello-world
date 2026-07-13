@@ -28,6 +28,7 @@ export const api = {
   publish: (ids) => request('/api/publish', { method: 'POST', json: { ids } }),
   getUnmappedChats: () => request('/api/chats/unmapped'),
   mapChat: (chatId, vendor) => request('/api/chats/map', { method: 'POST', json: { chatId, vendor } }),
+  markWorkerChat: (chatId) => request('/api/chats/worker', { method: 'POST', json: { chatId } }),
   getCollectionRules: () => request('/api/collection-rules'),
   putCollectionRules: (rules) => request('/api/collection-rules', { method: 'PUT', json: { rules } }),
   mergeReview: (ids, keepId) => request('/api/review/merge', { method: 'POST', json: { ids, keepId } }),

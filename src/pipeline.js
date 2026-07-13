@@ -42,7 +42,7 @@ function sendSavedMessage(text) {
 
 // ── intake ─────────────────────────────────────────────────────────────────────
 async function ingestImage(buffer, meta) {
-  const { vendor, source, chatId = null, msgId = null, caption = '' } = meta;
+  const { vendor, source, chatId = null, msgId = null, caption = '', batchId = null } = meta;
 
   const resized = await sharp(buffer)
     .rotate()
@@ -66,10 +66,10 @@ async function ingestImage(buffer, meta) {
   fs.writeFileSync(filePath, resized);
 
   await db.query(
-    `INSERT INTO images (hash, vendor, source, tg_chat_id, tg_msg_id, file_path, received_at, status)
-     VALUES ($1, $2, $3, $4, $5, $6, now(), 'pending_analysis')
+    `INSERT INTO images (hash, vendor, source, tg_chat_id, tg_msg_id, file_path, batch_id, received_at, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, now(), 'pending_analysis')
      ON CONFLICT (hash) DO NOTHING`,
-    [hash, vendor, source, chatId, msgId, filePath]
+    [hash, vendor, source, chatId, msgId, filePath, batchId]
   );
   if (caption) {
     // keep nothing else from captions — vendor code was already extracted
@@ -80,9 +80,16 @@ async function ingestImage(buffer, meta) {
 // ── analysis prompt ────────────────────────────────────────────────────────────
 // Images may be a single product (multiple angles) OR several different
 // products a vendor sent back-to-back — the model must split them, not assume one.
-function analysisPrompt(imageCount) {
-  return `You are a fashion product analyst and marketing copywriter for a UK menswear resale store (ukstylishclub.com). You are shown ${imageCount} image(s), labelled "Image 0" through "Image ${imageCount - 1}" in that order before each photo.
+function analysisPrompt(imageCount, instructions) {
+  const instructionsBlock = instructions ? `
+The person who sent these photos (a shop worker, sending on behalf of the vendor) included these free-form instructions — follow them where relevant (e.g. grouping, size, price, collection, urgency), but never invent facts about the product that aren't visible in the photos themselves:
+"""
+${instructions}
+"""
+` : '';
 
+  return `You are a fashion product analyst and marketing copywriter for a UK menswear resale store (ukstylishclub.com). You are shown ${imageCount} image(s), labelled "Image 0" through "Image ${imageCount - 1}" in that order before each photo.
+${instructionsBlock}
 These images may show ONE product (e.g. multiple angles of the same item) OR MULTIPLE DIFFERENT products (e.g. a vendor sent several distinct items in one batch). Group images that show the same physical item together; put different items in separate entries. Do not merge unrelated items just because they were sent together.
 
 For each distinct product, also write marketing copy for it: an SEO title and meta description for Google, a short product description, search tags, alt text describing the photo, a social media caption with hashtags, a short marketing email blurb, and ad copy for Meta/Google ads. Keep all copy honest and specific to what's visible — never invent details (material, condition, authenticity) you can't see in the photo.
@@ -136,12 +143,23 @@ async function runBatchCycle() {
     if (!pending.rows.length) return { submitted: 0, message: 'nothing pending' };
 
     const groups = groupCandidates(pending.rows);
+
+    const batchIds = [...new Set(groups.flat().map((g) => g.batch_id).filter(Boolean))];
+    const instructionsFor = {};
+    if (batchIds.length) {
+      const { rows } = await db.query(
+        'SELECT id, instructions FROM batches WHERE id = ANY($1)', [batchIds]
+      );
+      for (const r of rows) instructionsFor[r.id] = r.instructions;
+    }
+
     const requests = [];
-    const mapping = {}; // custom_id -> { hashes, vendor }
+    const mapping = {}; // custom_id -> { hashes, vendor, batchId }
 
     for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
       const customId = `p${Date.now()}-${i}`;
+      const batchId = group[0].batch_id || null;
       const content = [];
       group.forEach((img, idx) => {
         content.push({ type: 'text', text: `Image ${idx}:` });
@@ -154,7 +172,7 @@ async function runBatchCycle() {
           },
         });
       });
-      content.push({ type: 'text', text: analysisPrompt(group.length) });
+      content.push({ type: 'text', text: analysisPrompt(group.length, instructionsFor[batchId]) });
       requests.push({
         custom_id: customId,
         params: {
@@ -163,7 +181,11 @@ async function runBatchCycle() {
           messages: [{ role: 'user', content }],
         },
       });
-      mapping[customId] = { hashes: group.map((g) => g.hash), vendor: group[0].vendor };
+      mapping[customId] = {
+        hashes: group.map((g) => g.hash),
+        vendor: group[0].vendor,
+        workerNote: instructionsFor[batchId] || null,
+      };
     }
 
     const allHashes = groups.flat().map((g) => g.hash);
@@ -184,12 +206,33 @@ async function runBatchCycle() {
 
 // Group consecutive photos from the same chat (or gallery upload) arriving
 // within 10 minutes — likely the same product from multiple angles. Max 4.
+// Rows carrying a batch_id (worker-declared batch) instead group purely by
+// that id, ignoring the time window — the worker may take longer than 10
+// minutes to send everything, and batch membership is already explicit.
 function groupCandidates(rows) {
   const groups = [];
+  const byBatch = {}; // batch_id -> array of groups (each capped at MAX_IMAGES_PER_REQUEST)
   let current = null;
   let lastKey = null;
   let lastTime = 0;
   for (const row of rows) {
+    if (row.batch_id) {
+      let batchGroups = byBatch[row.batch_id];
+      if (!batchGroups) {
+        batchGroups = [];
+        byBatch[row.batch_id] = batchGroups;
+      }
+      let last = batchGroups[batchGroups.length - 1];
+      if (!last || last.length >= MAX_IMAGES_PER_REQUEST) {
+        last = [];
+        batchGroups.push(last);
+        groups.push(last);
+      }
+      last.push(row);
+      current = null; // don't let a following non-batch row merge across this gap
+      continue;
+    }
+
     const key = `${row.vendor}|${row.tg_chat_id ?? 'gallery'}`;
     const t = new Date(row.received_at).getTime();
     const sameProduct = current
@@ -267,7 +310,7 @@ async function pollBatchUntilDone(state) {
 
         const key = [map.vendor, analysis.brand, analysis.productType, analysis.styleName].join('|');
         if (!grouped[key]) {
-          grouped[key] = { vendor: map.vendor, analysis, hashes: [], lowConf: false, notes: new Set() };
+          grouped[key] = { vendor: map.vendor, analysis, hashes: [], lowConf: false, notes: new Set(), workerNote: map.workerNote };
         }
         grouped[key].hashes.push(...hashes);
         if (analysis.confidence !== 'high') grouped[key].lowConf = true;
@@ -295,13 +338,14 @@ async function pollBatchUntilDone(state) {
       await db.query(
         `INSERT INTO review_queue
            (vendor, title, product_type, collection, colours, sizes, price,
-            confidence, notes, image_hashes, state, marketing, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now())`,
+            confidence, notes, image_hashes, state, marketing, worker_note, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, now())`,
         [
           g.vendor, title, type, collection,
           (Array.isArray(a.colours) && a.colours.length ? a.colours : ['Black']).join(', '),
           vendors.sizesFor(type, a.isFootwear),
           price, confidence, [...g.notes].join('; '), g.hashes, state_, JSON.stringify(a.marketing || {}),
+          g.workerNote || null,
         ]
       );
       (stats.perVendor[g.vendor] ||= { photos: 0, products: 0 }).products += 1;
