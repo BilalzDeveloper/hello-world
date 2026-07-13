@@ -84,6 +84,7 @@ export default function ListingReview() {
           onRejectOne={(id) => actions.rejectListing(id)}
           onApproveAll={() => actions.approveAndPublishAllReady(autoReady.filter((r) => !duplicateIds.has(r.id)).map((r) => r.id))}
           onOpenLightbox={(id, index) => actions.openLightbox(id, index)}
+          onUpdateField={(id, field, value) => actions.updateListingField(id, field, value)}
         />
       )}
 
@@ -618,9 +619,9 @@ function Thumb({ url, size, height, badge, selected, onToggleSelect, onExpand, i
 }
 
 // The "85% hands-off" bucket: high confidence, price already auto-filled from
-// price_rules. Nothing here needs editing — just a fast way to see them and
-// either publish everything in one click or peel off one that looks wrong.
-function ReadyToPublishSection({ items, duplicateIds, mergeSelected, onToggleMerge, onApproveOne, onRejectOne, onApproveAll, onOpenLightbox }) {
+// price_rules. Most rows just need a glance and a click, but each can still
+// be expanded for a quick edit if the AI got something stale or wrong.
+function ReadyToPublishSection({ items, duplicateIds, mergeSelected, onToggleMerge, onApproveOne, onRejectOne, onApproveAll, onOpenLightbox, onUpdateField }) {
   const [busy, setBusy] = useState(false);
   const safeCount = items.filter((it) => !duplicateIds.has(it.id)).length;
   const flaggedCount = items.length - safeCount;
@@ -669,9 +670,10 @@ function ReadyToPublishSection({ items, duplicateIds, mergeSelected, onToggleMer
             flagged={duplicateIds.has(it.id)}
             mergeChecked={!!mergeSelected[it.id]}
             onToggleMerge={() => onToggleMerge(it.id)}
-            onApprove={() => onApproveOne(it.id, it.price)}
+            onApprove={(price) => onApproveOne(it.id, price)}
             onReject={() => onRejectOne(it.id)}
             onOpenLightbox={(i) => onOpenLightbox(it.id, i)}
+            onUpdateField={(field, value) => onUpdateField(it.id, field, value)}
           />
         ))}
       </div>
@@ -679,9 +681,14 @@ function ReadyToPublishSection({ items, duplicateIds, mergeSelected, onToggleMer
   );
 }
 
-function ReadyRow({ item, flagged, mergeChecked, onToggleMerge, onApprove, onReject, onOpenLightbox }) {
+function ReadyRow({ item, flagged, mergeChecked, onToggleMerge, onApprove, onReject, onOpenLightbox, onUpdateField }) {
+  const { config } = useAuth();
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({ title: item.title || '', sizes: item.sizes || '', colours: item.colours || '', notes: item.notes || '' });
+  const [priceInput, setPriceInput] = useState(item.price ?? '');
+  const priceValid = priceInput !== '' && Number.isFinite(Number(priceInput)) && Number(priceInput) > 0;
   const url = (item.imageUrls || [])[0];
   const hasCollection = item.collection && !item.collection.includes('⚠️');
 
@@ -695,48 +702,116 @@ function ReadyRow({ item, flagged, mergeChecked, onToggleMerge, onApprove, onRej
     }
   }
 
+  function saveField(field) {
+    const value = draft[field];
+    if (value === (item[field] || '')) return;
+    onUpdateField(field, value);
+  }
+
+  function savePrice() {
+    if (!priceValid || Number(priceInput) === Number(item.price)) return;
+    onUpdateField('price', Number(priceInput));
+  }
+
   function handlePublishClick() {
+    if (!priceValid) return;
     if (flagged && !confirming) {
       setConfirming(true);
       return;
     }
-    run(onApprove);
+    run(() => onApprove(Number(priceInput)));
   }
 
+  const rowFieldStyle = {
+    width: '100%', border: '1px solid #e8e8e8', borderRadius: 6, padding: '4px 7px', fontFamily: 'inherit',
+    fontSize: 12.5, color: '#3a3a3a', outline: 'none', background: '#fafafa',
+  };
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', border: `1.5px solid ${flagged ? '#e0b261' : '#e3e3e3'}`, borderRadius: 9, padding: '8px 12px' }}>
-      <MergeCheckbox checked={mergeChecked} onClick={onToggleMerge} />
-      <div
-        onClick={() => url && onOpenLightbox(0)}
-        style={{ width: 40, height: 40, borderRadius: 7, background: '#ededed', overflow: 'hidden', cursor: url ? 'pointer' : 'default', flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
-        {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PhotoIcon size={16} width={1.6} />}
+    <div style={{ background: '#fff', border: `1.5px solid ${flagged ? '#e0b261' : '#e3e3e3'}`, borderRadius: 9, padding: editing ? '10px 12px' : '8px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <MergeCheckbox checked={mergeChecked} onClick={onToggleMerge} />
+        <div
+          onClick={() => url && onOpenLightbox(0)}
+          style={{ width: 40, height: 40, borderRadius: 7, background: '#ededed', overflow: 'hidden', cursor: url ? 'pointer' : 'default', flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <PhotoIcon size={16} width={1.6} />}
+        </div>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: colorForVendor(item.vendor), flex: '0 0 auto' }} />
+        <div style={{ flex: 1, minWidth: 160 }}>
+          {editing ? (
+            <input
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+              onBlur={() => saveField('title')}
+              style={{ ...rowFieldStyle, fontSize: 13, fontWeight: 600, color: '#1a1a1a', marginBottom: 2 }}
+            />
+          ) : (
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{item.title}</div>
+          )}
+          <div style={{ fontSize: 11.5, color: '#8a8a8a' }}>{item.vendor} · {hasCollection ? item.collection : 'No collection set'}</div>
+        </div>
+        {flagged && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#9a5b00', background: '#fbf1dd', padding: '3px 8px', borderRadius: 999 }}>Possible duplicate</span>
+        )}
+        {editing ? (
+          <input
+            type="number" min="0" step="0.01" value={priceInput}
+            onChange={(e) => setPriceInput(e.target.value)}
+            onBlur={savePrice}
+            style={{
+              width: 76, fontSize: 13, fontWeight: 700, color: priceValid ? '#1a1a1a' : '#b3261e', border: '1px solid #ddd',
+              borderRadius: 6, padding: '4px 6px', fontFamily: 'inherit', outline: 'none', fontVariantNumeric: 'tabular-nums',
+            }}
+          />
+        ) : (
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontVariantNumeric: 'tabular-nums' }}>£{Number(item.price).toFixed(2)}</div>
+        )}
+        <button
+          onClick={() => setEditing((v) => !v)}
+          title={editing ? 'Done editing' : 'Edit this draft'}
+          style={{ background: editing ? '#eef0fb' : '#fff', color: '#4b53b5', border: '1px solid #d8dcf2', borderRadius: 7, padding: '6px 10px', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+        >
+          {editing ? 'Done' : 'Edit'}
+        </button>
+        <button
+          onClick={handlePublishClick}
+          disabled={busy || !priceValid}
+          className="so-publish-btn"
+          style={{
+            background: confirming ? '#b26b00' : '#0c8a5f', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 11px', fontFamily: 'inherit',
+            fontSize: 12, fontWeight: 700, cursor: busy || !priceValid ? 'default' : 'pointer', opacity: priceValid ? 1 : 0.6,
+          }}
+        >
+          {confirming ? 'Publish anyway?' : 'Publish'}
+        </button>
+        <button
+          onClick={() => run(onReject)}
+          disabled={busy}
+          className="so-reject-btn"
+          style={{ background: '#fff', color: '#b3261e', border: '1px solid #f0d4d1', borderRadius: 7, padding: '6px 10px', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: busy ? 'default' : 'pointer' }}
+        >
+          Reject
+        </button>
       </div>
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: colorForVendor(item.vendor), flex: '0 0 auto' }} />
-      <div style={{ flex: 1, minWidth: 160 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{item.title}</div>
-        <div style={{ fontSize: 11.5, color: '#8a8a8a' }}>{item.vendor} · {hasCollection ? item.collection : 'No collection set'}</div>
-      </div>
-      {flagged && (
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#9a5b00', background: '#fbf1dd', padding: '3px 8px', borderRadius: 999 }}>Possible duplicate</span>
+
+      {editing && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10, paddingTop: 10, borderTop: '1px solid #f0f0f0', paddingLeft: 64 }}>
+          <LabeledField label="Sizes" value={draft.sizes} onChange={(v) => setDraft((d) => ({ ...d, sizes: v }))} onBlur={() => saveField('sizes')} />
+          <LabeledField label="Colours" value={draft.colours} onChange={(v) => setDraft((d) => ({ ...d, colours: v }))} onBlur={() => saveField('colours')} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.4px', color: '#9a9a9a', textTransform: 'uppercase' }}>Collection</span>
+            <LovPicker
+              value={hasCollection ? item.collection : ''}
+              options={config?.collections || []}
+              onChange={(v) => onUpdateField('collection', v)}
+              placeholder="Pick a collection…"
+              width={220}
+            />
+          </div>
+          <LabeledField label="Notes" wide value={draft.notes} onChange={(v) => setDraft((d) => ({ ...d, notes: v }))} onBlur={() => saveField('notes')} />
+        </div>
       )}
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontVariantNumeric: 'tabular-nums' }}>£{Number(item.price).toFixed(2)}</div>
-      <button
-        onClick={handlePublishClick}
-        disabled={busy}
-        className="so-publish-btn"
-        style={{ background: confirming ? '#b26b00' : '#0c8a5f', color: '#fff', border: 'none', borderRadius: 7, padding: '6px 11px', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: busy ? 'default' : 'pointer' }}
-      >
-        {confirming ? 'Publish anyway?' : 'Publish'}
-      </button>
-      <button
-        onClick={() => run(onReject)}
-        disabled={busy}
-        className="so-reject-btn"
-        style={{ background: '#fff', color: '#b3261e', border: '1px solid #f0d4d1', borderRadius: 7, padding: '6px 10px', fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: busy ? 'default' : 'pointer' }}
-      >
-        Reject
-      </button>
     </div>
   );
 }
