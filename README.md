@@ -104,7 +104,7 @@ it kept or skipped it.
 | `src/vendors.js` | vendor codes + collection map |
 | `src/db.js` | Neon Postgres via `pg`; schema bootstrap + price seed on boot |
 | `scripts/login.js` | one-time Telegram login → session string |
-| `public/` | the PWA (dark/light UI, Inbox / Review / Queue / Settings) + `guide.html` |
+| `public/console/` | the built React console (Today / Listings / Vendors / Settings / Guide) — `/` redirects here |
 
 Images are stored under `./data/` (the DB rows point at them). Secrets live only in
 `.env` (gitignored) — nothing secret is ever served to the browser.

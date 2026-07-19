@@ -11,7 +11,6 @@ ask it to flip the status.
 - **Read it:** scan the status marks. `📋 Planned` = agreed but not built. `💡 Idea` = mentioned but not scoped/agreed yet. `✅ Done` = shipped.
 - **Update it yourself:** edit directly, same as any file — it's just markdown, and it's tracked in git so old entries are never truly lost (`git log -p REQUIREMENTS.md` shows the full history).
 - **Update it via Claude:** say "add this to REQUIREMENTS.md" when you make a request, or "mark X done" once something ships. Start a new session by saying "check REQUIREMENTS.md for open items" if you want a recap.
-- **Source of old requirements:** the original PWA at `public/index.html` already implements several things the new console (`console/`) doesn't have yet — full multi-field editing, merge, split. That file is itself a working reference for exact behavior when porting a feature across.
 
 ---
 
@@ -26,6 +25,7 @@ ask it to flip the status.
 - ✅ **Split a listing** — per-photo select overlay + "Split into new draft" button, calls existing `POST /api/review/:id/split` (2026-06-29)
 - ✅ **"Ready to publish" section** — green section at the top of Listing review showing `auto_ready` drafts (high confidence, price auto-filled), with a per-item Publish/Reject and a one-click "Approve & publish all" bulk action (reuses existing `approve-bulk` + `publish` APIs). Also added a matching card on Today. Unblocked the 3 real Hermès Shoes listings that had been stranded with no UI path (2026-06-30).
 - ✅ **Duplicate-detection safeguard before bulk-publish** — "Ready to publish" now groups items by vendor+price+sizes+colours; matches (2+) get an amber "Possible duplicate" badge, are excluded from "Approve & publish all", and require a one-click "Publish anyway?" confirmation to publish individually. Verified with synthetic test rows (2026-06-30) before deleting them — never touched real data during the test.
+- ✅ **Removed the old `public/index.html` PWA** — it was kept around only as a reference while porting full multi-field editing, merge, and split into the new console; all three shipped (see below), so it was serving stale content at the site root alongside the real console and has been deleted, with `/` now redirecting to `/console/` (2026-07-14).
 - ✅ **Merge now reachable from "Ready to publish", and works across vendors** — found via 3 real Hermès/Dior Trainers drafts that were one physical item split across two different vendor chat tags (so vendor differed, missing the duplicate-detection signature entirely) with no merge checkbox in that section to fix it manually. Added the same merge checkbox to Ready-to-publish rows (feeds the existing "Merge selected" toolbar action), and removed the merge API's same-vendor restriction — a human explicitly selecting ids to merge is the actual check now, not a field match. Merging always demotes the kept row to `needs_review` so title/price get a final human look before publishing. Verified end-to-end against the real stuck rows (2026-06-30): merged ids 27+28 into 26 (6 photos combined, price preserved), confirmed in DB.
 
 ## Vendors

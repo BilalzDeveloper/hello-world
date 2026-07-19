@@ -591,6 +591,10 @@ app.get('/api/pipeline/status', async (_req, res, next) => {
 });
 
 // ── static frontend ────────────────────────────────────────────────────────────
+// The React console at /console is the only frontend now (the old
+// public/index.html PWA it replaced has been removed) — send bare visits
+// to root there instead of a static 404.
+app.get('/', (_req, res) => res.redirect('/console/'));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use((err, _req, res, _next) => {
