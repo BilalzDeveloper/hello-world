@@ -366,6 +366,25 @@ app.get('/api/chats/unmapped', async (_req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Currently-flagged worker chats — the Vendors screen's "Worker chats" list.
+// Once a chat is flagged it drops off /api/chats/unmapped, so without this
+// there'd be nowhere in the console to see it's actually been set.
+app.get('/api/chats/workers', async (_req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT vc.tg_chat_id, vc.chat_title, vc.mapped_at,
+              COALESCE(i.n, 0) AS image_count, i.last_received_at
+       FROM vendor_chats vc
+       LEFT JOIN (SELECT tg_chat_id, COUNT(*)::int AS n, MAX(received_at) AS last_received_at
+                  FROM images GROUP BY tg_chat_id) i
+         ON i.tg_chat_id = vc.tg_chat_id
+       WHERE vc.is_worker = true
+       ORDER BY vc.mapped_at DESC NULLS LAST`
+    );
+    res.json(rows.map((r) => ({ ...r, tg_chat_id: String(r.tg_chat_id) })));
+  } catch (e) { next(e); }
+});
+
 // A worker chat sends photos on a vendor's behalf, with the vendor declared
 // per-batch (see userbot.js openWorkerBatch) rather than mapped to the chat —
 // so this only flips is_worker, leaving vendor untouched (NULL).
@@ -379,6 +398,15 @@ app.post('/api/chats/worker', async (req, res, next) => {
        ON CONFLICT (tg_chat_id) DO UPDATE SET is_worker = true`,
       [chatId]
     );
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/chats/worker/unflag', async (req, res, next) => {
+  try {
+    const chatId = String(req.body?.chatId || '');
+    if (!/^-?\d+$/.test(chatId)) return res.status(400).json({ error: 'Bad chatId' });
+    await db.query(`UPDATE vendor_chats SET is_worker = false WHERE tg_chat_id = $1`, [chatId]);
     res.json({ ok: true });
   } catch (e) { next(e); }
 });

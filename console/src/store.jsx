@@ -26,6 +26,9 @@ function initialState() {
     vendorReqs: [],
     vendorReqsStatus: 'idle',
     vendorReqsError: null,
+    workerChats: [],
+    workerChatsStatus: 'idle',
+    workerChatsError: null,
     collectionRules: [],
     collectionRulesStatus: 'idle',
     collectionRulesError: null,
@@ -108,6 +111,15 @@ function reducer(state, action) {
       return { ...state, vendorReqsStatus: 'error', vendorReqsError: action.message };
     case 'VENDOR_REQ_REMOVED':
       return { ...state, vendorReqs: state.vendorReqs.filter((v) => v.tg_chat_id !== action.tgChatId) };
+
+    case 'WORKER_CHATS_LOADING':
+      return { ...state, workerChatsStatus: 'loading', workerChatsError: null };
+    case 'WORKER_CHATS_LOADED':
+      return { ...state, workerChatsStatus: 'ready', workerChats: action.rows };
+    case 'WORKER_CHATS_ERROR':
+      return { ...state, workerChatsStatus: 'error', workerChatsError: action.message };
+    case 'WORKER_CHAT_REMOVED':
+      return { ...state, workerChats: state.workerChats.filter((v) => v.tg_chat_id !== action.tgChatId) };
 
     case 'COLLECTION_RULES_LOADING':
       return { ...state, collectionRulesStatus: 'loading', collectionRulesError: null };
@@ -200,6 +212,16 @@ async function loadVendorRequests(dispatch) {
   }
 }
 
+async function loadWorkerChats(dispatch) {
+  dispatch({ type: 'WORKER_CHATS_LOADING' });
+  try {
+    const rows = await api.getWorkerChats();
+    dispatch({ type: 'WORKER_CHATS_LOADED', rows });
+  } catch (e) {
+    dispatch({ type: 'WORKER_CHATS_ERROR', message: e.message });
+  }
+}
+
 async function loadCollectionRules(dispatch) {
   dispatch({ type: 'COLLECTION_RULES_LOADING' });
   try {
@@ -216,6 +238,7 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     loadListings(dispatch);
     loadVendorRequests(dispatch);
+    loadWorkerChats(dispatch);
     loadCollectionRules(dispatch);
   }, []);
 
@@ -238,6 +261,7 @@ export function StoreProvider({ children }) {
 
       reloadListings: () => loadListings(dispatch),
       reloadVendorRequests: () => loadVendorRequests(dispatch),
+      reloadWorkerChats: () => loadWorkerChats(dispatch),
       reloadCollectionRules: () => loadCollectionRules(dispatch),
 
       updateListingField: async (id, field, value) => {
@@ -362,7 +386,17 @@ export function StoreProvider({ children }) {
         try {
           await api.markWorkerChat(tgChatId);
           dispatch({ type: 'VENDOR_REQ_REMOVED', tgChatId });
+          await loadWorkerChats(dispatch);
           dispatch({ type: 'SHOW_TOAST', message: 'Marked as a worker chat — its instruction messages will open batches.' });
+        } catch (e) {
+          dispatch({ type: 'SHOW_TOAST', message: e.message });
+        }
+      },
+      unflagWorkerChat: async (tgChatId) => {
+        try {
+          await api.unflagWorkerChat(tgChatId);
+          dispatch({ type: 'WORKER_CHAT_REMOVED', tgChatId });
+          dispatch({ type: 'SHOW_TOAST', message: 'No longer a worker chat — its next photo will need a vendor mapping.' });
         } catch (e) {
           dispatch({ type: 'SHOW_TOAST', message: e.message });
         }
