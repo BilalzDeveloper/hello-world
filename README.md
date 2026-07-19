@@ -1,176 +1,110 @@
-# Facebook Group Member Transfer Tool
+# UKSC — Telegram → AI → Shopify pipeline (laptop edition)
 
-A Python CLI tool that reads all members from one Facebook group and sends them invitations to join another group — using the official Facebook Graph API.
+UK Stylish Club product onboarder. A Node.js app you run on your laptop that:
 
-> **How it works:** Facebook's API does not allow force-adding users. Instead, the tool sends each member a standard group invitation that they must accept. This is intentional (anti-spam) and keeps the tool fully compliant with Facebook's Platform Policies.
+1. **Silently** reads your personal Telegram for vendor product photos (read-only toward vendors — it never replies, reacts, or sends anything to a vendor chat)
+2. Analyses them with the **Anthropic Message Batches API** (cheap, async, every 15 min, model `claude-haiku-4-5`)
+3. Lets you **review / price / publish** to Shopify from a PWA at `http://localhost:3000`
+4. Notifies **only you**, via your own Telegram **Saved Messages**
 
----
-
-## Requirements
-
-- Python 3.8+
-- A Facebook account that is **admin of both groups**
-- A Facebook Developer App (free, setup takes ~10 minutes — see below)
-
----
-
-## Installation
-
-```bash
-git clone https://github.com/bilalzdeveloper/hello-world.git
-cd hello-world
-pip install -r requirements.txt
-cp .env.example .env
+```
+Telegram photos ──┐
+                  ├─► resize → hash → dedupe → batch analysis → review queue ─► Shopify
+Gallery uploads ──┘                                 │
+                                         Saved Messages digests
 ```
 
-Then fill in `.env` with your credentials (see setup steps below).
+> **Runs only while your laptop is on and awake.** The userbot ingests photos that
+> arrive *after* it connects; messages sent while it's off aren't back-scanned.
 
 ---
 
-## Facebook Developer App Setup
+## Quick start
 
-### Step 1 — Create the App
+You need [Node.js 20+](https://nodejs.org) and Git.
 
-1. Go to [https://developers.facebook.com/apps/](https://developers.facebook.com/apps/) and click **Create App**.
-2. Choose **Other** for use case, then **None** for app type.
-3. Give it any name (e.g. "Group Transfer Tool"). Your app starts in Development Mode automatically — no review needed for personal use.
+```bash
+git clone -b claude/uksc-v2-pipeline-c2e2zq https://github.com/BilalzDeveloper/hello-world.git uksc
+cd uksc
+npm install
+cp .env.example .env        # Windows: copy .env.example .env
+```
 
-### Step 2 — Add Required Permissions
+Fill in `.env` (see the table below), then:
 
-1. In the App Dashboard, go to **App Review → Permissions and Features**.
-2. Find `groups_access_member_info` and click **Request** to add it to your app.
-3. In Development Mode, this permission works without submitting for review, as long as your account is listed as an App Admin or Tester.
+```bash
+node scripts/login.js       # one-time Telegram login → prints TELEGRAM_SESSION
+npm start                   # → open http://localhost:3000, log in with APP_PASSWORD
+```
 
-### Step 3 — Get Your User Access Token
+Phone on the same Wi-Fi can use it too: `http://<your-laptop-ip>:3000`.
 
-1. Go to [https://developers.facebook.com/tools/explorer/](https://developers.facebook.com/tools/explorer/).
-2. Select your app from the dropdown (top right).
-3. Click **Generate Access Token**.
-4. In the permissions selector, add: `groups_access_member_info` and `publish_to_groups`.
-5. Click **Generate Access Token** again and authorize — this gives a short-lived token (~1–2 hours).
-6. Copy the token.
+### `.env` values
 
-### Step 4 — Collect Your Credentials
-
-| Value | Where to find it |
+| Variable | Where it comes from |
 |---|---|
-| **App ID** | App Dashboard → Settings → Basic |
-| **App Secret** | App Dashboard → Settings → Basic (click Show) |
-| **User Access Token** | Graph API Explorer (Step 3 above) |
-| **Source Group ID** | Open Group A on Facebook → the number in the URL: `facebook.com/groups/XXXXXXXX` |
-| **Dest Group ID** | Open Group B on Facebook → same method |
+| `DATABASE_URL` | [neon.tech](https://neon.tech) → your project → Connection Details (keep `?sslmode=require`) |
+| `TELEGRAM_API_ID` / `TELEGRAM_API_HASH` | [my.telegram.org](https://my.telegram.org) → API development tools |
+| `TELEGRAM_SESSION` | printed by `node scripts/login.js` (paste the whole COPY-THIS block) |
+| `ANTHROPIC_KEY` | console.anthropic.com → API Keys |
+| `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` | Shopify admin → Settings → Apps → Develop apps → "Build apps in Dev Dashboard" → your app → Settings → Credentials. (Legacy custom apps with a directly-revealed `shpat_…` token were retired by Shopify in Jan 2026 — the app now exchanges these for a short-lived access token itself.) |
+| `SHOPIFY_DOMAIN` | `uk-stylish.myshopify.com` |
+| `APP_PASSWORD` | anything — your PWA login password |
+| `PUBLISH_STATUS` | `ACTIVE` (or `DRAFT` to stage products in Shopify before going live) |
 
-### Step 5 — Fill in `.env`
+Minimum to boot and log in: `DATABASE_URL` + `APP_PASSWORD`. The other secrets switch
+their features on as you add them (Telegram ingest, AI analysis, Shopify publishing).
 
-```
-FB_APP_ID=123456789
-FB_APP_SECRET=abcdef1234567890abcdef1234567890
-FB_ACCESS_TOKEN=EAAxxxxx...
-SOURCE_GROUP_ID=111222333444555
-DEST_GROUP_ID=666777888999000
-```
-
-### Step 6 — Exchange for a Long-Lived Token (recommended)
-
-Short-lived tokens expire in ~2 hours. Exchange it for a 60-day token:
-
-```bash
-python main.py --exchange-token
-```
-
-Copy the printed token back into `.env` as `FB_ACCESS_TOKEN`.
+Tables are created automatically on first boot. Sanity-check the DB anytime with
+`npm run db:check`.
 
 ---
 
-## Usage
+## Daily flow
 
-### Dry Run (read members only, no invitations sent)
+1. Vendors send photos on Telegram (or forward WhatsApp photos to your **Saved Messages**, or upload from your gallery in the Inbox tab). A caption with a vendor code (`#siim`, `ad`, …) assigns the vendor; otherwise the chat mapping is used; unknown chats appear under **⚠️ Unassigned** → map them once in Settings (or mark `IGNORE`).
+2. Every 15 min the pipeline batches new photos to the AI. A **Saved Messages digest** lands when each batch finishes.
+3. **Review** tab: fix titles/types/colours, set prices (global, by type, or per product), or tap **Approve all high-conf** (auto-priced from your price rules).
+4. Hit **🚀 GO** → watch the **Queue** tab. Publishing runs server-side; a "publish complete" digest lands in Saved Messages.
 
-```bash
-python main.py --source SOURCE_GROUP_ID --dest DEST_GROUP_ID --dry-run
-```
-
-Exports a CSV of all members. Inspect it before running live.
-
-### Live Transfer
-
-```bash
-python main.py --source SOURCE_GROUP_ID --dest DEST_GROUP_ID
-```
-
-Reads group IDs from command line (or you can omit them and use the values in `.env`).
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--source` | — | Source group ID (Group A) |
-| `--dest` | — | Destination group ID (Group B) |
-| `--dry-run` | off | Read members, export CSV, do NOT send invitations |
-| `--delay` | `18` | Seconds between invite calls (~200/hour rate limit) |
-| `--exchange-token` | off | Swap short-lived token for 60-day token and exit |
-
-### Example with custom delay
-
-```bash
-python main.py --source 111222333 --dest 444555666 --delay 20
-```
+Testing tip: **Settings → ▶ Run pipeline now** triggers the 15-min cron immediately.
+Set `USERBOT_DEBUG=1 npm start` to log every Telegram message the userbot sees and why
+it kept or skipped it.
 
 ---
 
-## Output
+## TROUBLESHOOTING
 
-After a live run, a timestamped CSV is saved in the current directory:
+**Userbot not connecting / photos not appearing**
+- Run with `USERBOT_DEBUG=1 npm start` and send yourself a test photo (Saved Messages, caption `#siim`). The `userbot[dbg]:` line tells you whether the message arrived and why it was kept or skipped.
+- `userbot: TELEGRAM_SESSION not set — skipping` → `.env` not loaded (must be in the project root; line is `TELEGRAM_SESSION=…`, no quotes).
+- `TELEGRAM_SESSION invalid/expired` → re-run `node scripts/login.js` (the string is long — easy to truncate on paste). Hitting "Terminate all other sessions" in Telegram or changing your password also invalidates it.
+- Remember: only **new** photos are ingested, and they show in **Inbox** first (as "pending analysis") — they become products in **Review** only after the 15-min cron or "Run pipeline now".
 
-```
-fb_transfer_20240115_143022.csv
-```
+**Neon / SSL errors**
+- `DATABASE_URL` must be the full Neon string including `?sslmode=require`.
+- Neon free tier suspends idle DBs; the first query after a while takes a few seconds — bootstrap retries automatically.
 
-| Column | Values |
+**sharp build issues**
+- `npm rebuild sharp`, or delete `node_modules` and `npm install` again.
+
+**Batch polling**
+- Batches usually finish well under an hour; the app polls every 30 s. If you restart mid-batch, state is saved under `./data` and polling resumes on boot.
+
+---
+
+## Layout
+
+| Path | What |
 |---|---|
-| `name` | Member's display name |
-| `user_id` | Numeric Facebook user ID |
-| `status` | `invited`, `already_member`, `privacy_blocked`, `error`, `skipped` |
-| `reason` | Error detail (empty on success) |
+| `src/server.js` | Express: static PWA + JSON API, app-password auth |
+| `src/userbot.js` | GramJS on your personal account. READ-ONLY toward vendors; only ever writes to your Saved Messages |
+| `src/pipeline.js` | resize (sharp, 800px q80) → SHA-256 dedupe → Message Batches → review queue |
+| `src/shopify-queue.js` | throttled (~1.5 r/s) publisher, 3 retries, DB-persisted, resumes on restart |
+| `src/vendors.js` | vendor codes + collection map |
+| `src/db.js` | Neon Postgres via `pg`; schema bootstrap + price seed on boot |
+| `scripts/login.js` | one-time Telegram login → session string |
+| `public/console/` | the built React console (Today / Listings / Vendors / Settings / Guide) — `/` redirects here |
 
-To verify invitations were sent: open Group B on Facebook → **Admin Panel → Members → Invited**.
-
----
-
-## Rate Limiting
-
-Facebook allows ~200 API calls per hour on a standard user token.
-
-- Default delay is **18 seconds** between invite calls (~200/hour).
-- On a rate-limit error the script sleeps 60 seconds and retries once.
-- After 2 consecutive rate-limit errors it saves partial results and exits — re-run the script after an hour to continue.
-- Use `--delay 30` for a more conservative rate if you have a large group.
-
----
-
-## Policy Compliance
-
-This tool:
-- Uses only official Facebook Graph API endpoints
-- Never force-adds users — only sends invitations users must accept
-- Only requests `id` and `name` fields (no personal data harvesting)
-- Respects rate limits
-- Requires you to be admin of both groups
-
-It does **not** scrape, automate a browser, or bypass any Facebook security mechanism.
-
----
-
-## Troubleshooting
-
-**"Permission denied reading group members"**
-Your token is missing the `groups_access_member_info` permission. Re-generate the token in Graph API Explorer with that permission checked (Step 3).
-
-**"Access token is invalid or expired"**
-Run `python main.py --exchange-token` to get a fresh 60-day token, then update `.env`.
-
-**Invitations not appearing in Group B**
-Check that your account is an admin of Group B. The `POST /{group_id}/members` endpoint requires admin access.
-
-**"publish_to_groups" not available in Explorer**
-Some apps need this added under App Review → Permissions. In Development Mode it may appear as optional — add it and re-generate your token.
+Images are stored under `./data/` (the DB rows point at them). Secrets live only in
+`.env` (gitignored) — nothing secret is ever served to the browser.

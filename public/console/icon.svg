@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1a1a1a"/>
+  <text x="256" y="210" font-family="Georgia, 'Times New Roman', serif" font-size="180" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="middle" letter-spacing="-4">UK</text>
+  <text x="256" y="360" font-family="Georgia, 'Times New Roman', serif" font-size="100" font-weight="400" fill="#c8a96e" text-anchor="middle" dominant-baseline="middle" letter-spacing="16">STYLISH</text>
+</svg>
